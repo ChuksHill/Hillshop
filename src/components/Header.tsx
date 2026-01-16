@@ -8,7 +8,7 @@ import {
   FiUser,
   FiHeart,
   FiShoppingCart,
-  FiLogOut
+  // FiLogOut
 } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -18,7 +18,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { cartCount } = useCart();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const navItems = [

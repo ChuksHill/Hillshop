@@ -13,9 +13,9 @@ interface Product {
     discount_price: number | null;
 }
 
-interface ProductImage {
-    image_url: string;
-}
+// interface ProductImage {
+//     image_url: string;
+// }
 
 export default function Product() {
     const { id } = useParams();
