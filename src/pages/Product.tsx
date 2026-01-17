@@ -53,7 +53,7 @@ export default function Product() {
                 .select("image_url")
                 .eq("product_id", id);
 
-            const imgUrls = imgData?.map(i => i.image_url) || [];
+            const imgUrls = imgData?.map((i: { image_url: string }) => i.image_url) || [];
             setImages(imgUrls);
             if (imgUrls.length > 0) setSelectedImage(imgUrls[0]);
             else setSelectedImage("/placeholder.png");
