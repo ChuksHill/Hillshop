@@ -20,7 +20,7 @@ export default function Banner() {
 
   return (
     <section
-      className="relative w-full h-[70vh] min-h-[420px] transition-all duration-700 bg-cover bg-center"
+      className="relative w-full h-full transition-all duration-700 bg-cover bg-center"
       style={{
         backgroundImage: `url(${images[currentIndex]})`,
         backgroundSize: "cover",

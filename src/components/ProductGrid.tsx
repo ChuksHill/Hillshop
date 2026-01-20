@@ -88,13 +88,14 @@ export default function CategorySection() {
                     price={prod.price}
                     discountPrice={prod.discount_price || undefined}
                     images={imagesToShow}
-                    onOpenQuickView={() => {
+                    onOpenQuickView={(img) => {
                       setSelectedProduct({
                         id: prod.id,
                         name: prod.name,
                         price: prod.price,
                         discountPrice: prod.discount_price || undefined,
-                        images: imagesToShow
+                        images: imagesToShow,
+                        initialImage: img
                       });
                       setIsQuickViewOpen(true);
                     }}

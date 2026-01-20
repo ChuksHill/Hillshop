@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { FiX, FiShoppingCart, FiMinus, FiPlus } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import toast from "react-hot-toast";
@@ -25,7 +26,8 @@ export default function QuickView({ product, isOpen, onClose }: QuickViewProps) 
 
     useEffect(() => {
         if (product && product.images.length > 0) {
-            setSelectedImage(product.images[0]);
+            // @ts-ignore - added initialImage dynamically
+            setSelectedImage(product.initialImage || product.images[0]);
             setQuantity(1);
         }
     }, [product]);
@@ -66,13 +68,16 @@ export default function QuickView({ product, isOpen, onClose }: QuickViewProps) 
 
                 {/* Left: Image Section */}
                 <div className="w-full md:w-1/2 bg-gray-50 p-6 flex flex-col">
-                    <div className="flex-1 aspect-square rounded-2xl overflow-hidden shadow-inner bg-white">
+                    <Link
+                        to={`/product/${product.id}`}
+                        className="flex-1 aspect-square rounded-2xl overflow-hidden shadow-inner bg-white group/img"
+                    >
                         <img
                             src={selectedImage || "/placeholder.png"}
                             alt={product.name}
-                            className="w-full h-full object-cover transition-all duration-500"
+                            className="w-full h-full object-cover transition-all duration-500 group-hover/img:scale-110"
                         />
-                    </div>
+                    </Link>
 
                     {/* Thumbnails */}
                     {product.images.length > 1 && (
@@ -94,7 +99,9 @@ export default function QuickView({ product, isOpen, onClose }: QuickViewProps) 
                 {/* Right: Content Section */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
                     <div className="flex flex-col h-full">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h2>
+                        <Link to={`/product/${product.id}`} className="group/title">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2 group-hover/title:text-pink-500 transition-colors uppercase tracking-tight">{product.name}</h2>
+                        </Link>
 
                         <div className="flex items-center gap-3 mb-6">
                             {product.discountPrice ? (

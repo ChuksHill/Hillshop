@@ -164,13 +164,14 @@ export default function Shop() {
                                         price={prod.price}
                                         discountPrice={prod.discount_price || undefined}
                                         images={productImages.length > 0 ? productImages : ["/placeholder.png"]}
-                                        onOpenQuickView={() => {
+                                        onOpenQuickView={(img) => {
                                             setSelectedProduct({
                                                 id: prod.id,
                                                 name: prod.name,
                                                 price: prod.price,
                                                 discountPrice: prod.discount_price || undefined,
-                                                images: productImages.length > 0 ? productImages : ["/placeholder.png"]
+                                                images: productImages.length > 0 ? productImages : ["/placeholder.png"],
+                                                initialImage: img
                                             });
                                             setIsQuickViewOpen(true);
                                         }}

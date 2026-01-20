@@ -7,7 +7,7 @@ interface ProductCardProps {
   price: number;
   discountPrice?: number;
   images: string[];
-  onOpenQuickView?: () => void;
+  onOpenQuickView?: (initialImage?: string) => void;
 }
 
 export default function ProductCard({ id, name, price, discountPrice, images, onOpenQuickView }: ProductCardProps) {
@@ -27,7 +27,7 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 flex flex-col h-full group relative">
       {/* Clickable Area for Quick View */}
       <div
-        onClick={onOpenQuickView}
+        onClick={() => onOpenQuickView?.()}
         className="cursor-pointer flex-1 flex flex-col"
       >
         {/* Show first image as main */}
@@ -73,19 +73,22 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
         Add to Cart
       </button>
 
-      {/* Reserved space for thumbnails to ensure alignment */}
+      {/* Thumbnail Previews */}
       <div className="flex mt-4 gap-2 overflow-x-auto pb-1 scrollbar-hide h-9">
         {images.length > 1 ? (
-          images.slice(1, 4).map((img, idx) => (
+          images.slice(0, 4).map((img, idx) => (
             <img
               key={idx}
               src={img}
-              alt={`${name} ${idx + 2}`}
-              className="w-8 h-8 object-cover rounded-md border border-gray-100 flex-shrink-0 cursor-default"
+              alt={`${name} ${idx + 1}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenQuickView?.(img);
+              }}
+              className="w-8 h-8 object-cover rounded-md border border-gray-100 flex-shrink-0 cursor-pointer hover:border-pink-500 transition-colors"
             />
           ))
         ) : (
-          /* Invisible placeholder to maintain height when no extra images exist */
           <div className="w-8 h-8 invisible" />
         )}
       </div>
