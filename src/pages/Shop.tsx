@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import ProductCard from "../components/ProductCard";
+import QuickView from "../components/QuickView";
 import { FiFilter, FiSearch, FiX } from "react-icons/fi";
 
 interface Product {
@@ -30,6 +31,10 @@ export default function Shop() {
     const [images, setImages] = useState<ProductImage[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Quick View State
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+    const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
     // Sync state with URL params
     const selectedCategory = searchParams.get("category") || "All";
     const searchQuery = searchParams.get("search") || "";
@@ -50,9 +55,10 @@ export default function Shop() {
     }, []);
 
     const updateCategory = (catName: string) => {
-        if (catName === "All") searchParams.delete("category");
-        else searchParams.set("category", catName);
-        setSearchParams(searchParams);
+        const newParams = new URLSearchParams(searchParams);
+        if (catName === "All") newParams.delete("category");
+        else newParams.set("category", catName);
+        setSearchParams(newParams);
     };
 
     const updateSearch = (query: string) => {
@@ -63,8 +69,8 @@ export default function Shop() {
 
     const filteredProducts = products.filter((product) => {
         const matchesCategory =
-            selectedCategory === "All" ||
-            categories.find((c) => c.id === product.category_id)?.name === selectedCategory;
+            selectedCategory.toLowerCase() === "all" ||
+            categories.find((c) => c.id === product.category_id)?.name?.toLowerCase() === selectedCategory.toLowerCase();
 
         const matchesSearch = product.name
             .toLowerCase()
@@ -74,7 +80,7 @@ export default function Shop() {
     });
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-28">
             <div className="flex flex-col md:flex-row gap-8">
 
                 {/* Sidebar Filters */}
@@ -120,9 +126,9 @@ export default function Shop() {
                                 <button
                                     key={cat.id}
                                     onClick={() => updateCategory(cat.name)}
-                                    className={`block w-full text-left px-2 py-1 rounded ${selectedCategory === cat.name
-                                            ? "bg-pink-50 text-pink-600 font-medium"
-                                            : "text-gray-600 hover:bg-gray-50"
+                                    className={`block w-full text-left px-2 py-1 rounded ${selectedCategory.toLowerCase() === cat.name.toLowerCase()
+                                        ? "bg-pink-50 text-pink-600 font-medium"
+                                        : "text-gray-600 hover:bg-gray-50"
                                         }`}
                                 >
                                     {cat.name}
@@ -158,6 +164,16 @@ export default function Shop() {
                                         price={prod.price}
                                         discountPrice={prod.discount_price || undefined}
                                         images={productImages.length > 0 ? productImages : ["/placeholder.png"]}
+                                        onOpenQuickView={() => {
+                                            setSelectedProduct({
+                                                id: prod.id,
+                                                name: prod.name,
+                                                price: prod.price,
+                                                discountPrice: prod.discount_price || undefined,
+                                                images: productImages.length > 0 ? productImages : ["/placeholder.png"]
+                                            });
+                                            setIsQuickViewOpen(true);
+                                        }}
                                     />
                                 );
                             })}
@@ -175,6 +191,12 @@ export default function Shop() {
                     )}
                 </div>
             </div>
+
+            <QuickView
+                product={selectedProduct}
+                isOpen={isQuickViewOpen}
+                onClose={() => setIsQuickViewOpen(false)}
+            />
         </div>
     );
 }

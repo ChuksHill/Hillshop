@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
+import QuickView from "./QuickView";
 
 interface Product {
   id: string;
@@ -27,6 +28,10 @@ export default function CategorySection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
 
+  // Quick View State
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: categoriesData } = await supabase
@@ -50,13 +55,13 @@ export default function CategorySection() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <div className="py-12">
       {categories.map((category) => (
         <div key={category.id} className="mb-12">
           <div className="flex justify-between items-end mb-6">
             <h2 className="text-2xl font-bold">{category.name}</h2>
-            <Link to={`/shop?category=${category.name}`} className="text-pink-500 font-medium hover:underline text-sm">
-              View All {category.name} &rarr;
+            <Link to={`/shop?category=${encodeURIComponent(category.name)}`} className="text-pink-500 font-medium hover:underline text-sm">
+              {category.name.toLowerCase() === "accessories" ? "tho  and accessorie" : `View All ${category.name}`} &rarr;
             </Link>
           </div>
 
@@ -74,20 +79,35 @@ export default function CategorySection() {
                     : ["/placeholder.png"];
 
                 return (
-                  <Link key={prod.id} to={`/product/${prod.id}`} className="block">
-                    <ProductCard
-                      id={prod.id}
-                      name={prod.name}
-                      price={prod.price}
-                      discountPrice={prod.discount_price || undefined}
-                      images={imagesToShow}
-                    />
-                  </Link>
+                  <ProductCard
+                    key={prod.id}
+                    id={prod.id}
+                    name={prod.name}
+                    price={prod.price}
+                    discountPrice={prod.discount_price || undefined}
+                    images={imagesToShow}
+                    onOpenQuickView={() => {
+                      setSelectedProduct({
+                        id: prod.id,
+                        name: prod.name,
+                        price: prod.price,
+                        discountPrice: prod.discount_price || undefined,
+                        images: imagesToShow
+                      });
+                      setIsQuickViewOpen(true);
+                    }}
+                  />
                 );
               })}
           </div>
         </div>
       ))}
+
+      <QuickView
+        product={selectedProduct}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+      />
     </div>
   );
 }

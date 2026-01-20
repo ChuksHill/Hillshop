@@ -1,30 +1,26 @@
 // src/pages/Home.jsx
 import ProductGrid from "../components/ProductGrid";
-import Category from "../components/CategoryNav";
-import Banner from "../components/Banner"; // ✅ banner included
+import Banner from "../components/Banner";
 
 const Home = () => {
   return (
-    <div className="mx-4 sm:mx-6 lg:mx-8 px-4 sm:px-6 lg:px-8">
-      {/* Banner Section  */}
-      <section className="mx-4 sm:mx-6 lg:mx-8 mt-6">
+    <div className="flex flex-col min-h-screen">
+      {/* Banner Section - Full Width */}
+      <section className="w-full">
         <Banner />
       </section>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Categories */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
-          <Category />
-        </section>
+      {/* Main Content - Standard Container Alignment */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <main className="pt-4 pb-12">
 
-        {/* Products */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
-          <ProductGrid />
-        </section>
-      </main>
+
+          {/* Products */}
+          <section>
+            <ProductGrid />
+          </section>
+        </main>
+      </div>
     </div>
   );
 };

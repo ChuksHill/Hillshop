@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import ProductCard from "./ProductCard";
+import QuickView from "./QuickView";
 
 interface Product {
   id: string;
@@ -26,6 +28,10 @@ export default function CategorySection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
 
+  // Quick View State
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: categoriesData } = await supabase
@@ -49,10 +55,17 @@ export default function CategorySection() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <div className="py-0">
       {categories.map((category) => (
         <div key={category.id} className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">{category.name}</h2>
+          <Link to={`/shop?category=${encodeURIComponent(category.name)}`} className="group inline-block mb-8">
+            <h2 className="text-2xl font-bold text-pink-500 group-hover:text-pink-600 transition-colors flex items-center gap-2">
+              {category.name}
+              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                View All &rarr;
+              </span>
+            </h2>
+          </Link>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {products
@@ -75,12 +88,28 @@ export default function CategorySection() {
                     price={prod.price}
                     discountPrice={prod.discount_price || undefined}
                     images={imagesToShow}
+                    onOpenQuickView={() => {
+                      setSelectedProduct({
+                        id: prod.id,
+                        name: prod.name,
+                        price: prod.price,
+                        discountPrice: prod.discount_price || undefined,
+                        images: imagesToShow
+                      });
+                      setIsQuickViewOpen(true);
+                    }}
                   />
                 );
               })}
           </div>
         </div>
       ))}
+
+      <QuickView
+        product={selectedProduct}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+      />
     </div>
   );
 }

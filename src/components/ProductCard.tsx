@@ -7,9 +7,10 @@ interface ProductCardProps {
   price: number;
   discountPrice?: number;
   images: string[];
+  onOpenQuickView?: () => void;
 }
 
-export default function ProductCard({ id, name, price, discountPrice, images }: ProductCardProps) {
+export default function ProductCard({ id, name, price, discountPrice, images, onOpenQuickView }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
@@ -23,50 +24,69 @@ export default function ProductCard({ id, name, price, discountPrice, images }: 
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 flex flex-col h-full">
-      {/* Show first image as main */}
-      <div className="relative aspect-square mb-2 overflow-hidden rounded-md">
-        {images[0] ? (
-          <img src={images[0]} alt={name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No Image</div>
-        )}
-      </div>
+    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 flex flex-col h-full group relative">
+      {/* Clickable Area for Quick View */}
+      <div
+        onClick={onOpenQuickView}
+        className="cursor-pointer flex-1 flex flex-col"
+      >
+        {/* Show first image as main */}
+        <div className="relative aspect-square mb-4 overflow-hidden rounded-xl">
+          {images[0] ? (
+            <img
+              src={images[0]}
+              alt={name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 font-medium">No Image</div>
+          )}
 
-      <h3 className="font-semibold text-gray-800 line-clamp-1">{name}</h3>
+          {/* Subtle View Overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+            <span className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 shadow-lg">
+              Quick View
+            </span>
+          </div>
+        </div>
 
-      <div className="mb-4">
-        {discountPrice ? (
-          <p className="text-pink-500 font-bold">
-            ${discountPrice.toFixed(2)} <span className="line-through text-gray-400 text-sm ml-2">${price.toFixed(2)}</span>
-          </p>
-        ) : (
-          <p className="text-pink-500 font-bold">${price.toFixed(2)}</p>
-        )}
+        <h3 className="font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-pink-500 transition-colors">{name}</h3>
+
+        <div className="mb-4">
+          {discountPrice ? (
+            <p className="text-pink-600 font-bold">
+              ${discountPrice.toFixed(2)} <span className="line-through text-gray-400 text-sm ml-2 font-normal">${price.toFixed(2)}</span>
+            </p>
+          ) : (
+            <p className="text-gray-900 font-bold">${price.toFixed(2)}</p>
+          )}
+        </div>
       </div>
 
       <button
-        onClick={handleAddToCart}
-        className="mt-auto w-full bg-pink-500 text-white py-2 rounded hover:bg-pink-600 transition active:scale-95"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleAddToCart();
+        }}
+        className="mt-auto w-full bg-gray-900 text-white py-3 rounded-xl hover:bg-black transition-all active:scale-[0.97] font-bold text-sm"
       >
         Add to Cart
       </button>
 
-      {/* Optional: small thumbnails for multiple images */}
-      {/* Always reserve space for thumbnails to ensure alignment */}
-      <div className="flex mt-3 gap-2 overflow-x-auto pb-1">
+      {/* Reserved space for thumbnails to ensure alignment */}
+      <div className="flex mt-4 gap-2 overflow-x-auto pb-1 scrollbar-hide h-9">
         {images.length > 1 ? (
           images.slice(1, 4).map((img, idx) => (
             <img
               key={idx}
               src={img}
               alt={`${name} ${idx + 2}`}
-              className="w-10 h-10 object-cover rounded border border-gray-100 flex-shrink-0"
+              className="w-8 h-8 object-cover rounded-md border border-gray-100 flex-shrink-0 cursor-default"
             />
           ))
         ) : (
-          /* Invisible placeholder to maintain height */
-          <div className="w-10 h-10 invisible" />
+          /* Invisible placeholder to maintain height when no extra images exist */
+          <div className="w-8 h-8 invisible" />
         )}
       </div>
     </div>
