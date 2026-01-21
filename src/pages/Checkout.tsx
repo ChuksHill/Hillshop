@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext";
 import {
     FiChevronLeft,
     FiMapPin,
@@ -17,6 +19,7 @@ type Step = "shipping" | "delivery" | "payment";
 
 export default function Checkout() {
     const { items, cartTotal, clearCart } = useCart();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("shipping");
@@ -58,15 +61,60 @@ export default function Checkout() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!user) {
+            toast.error("Please log in to complete your order");
+            navigate("/login");
+            return;
+        }
+
         setLoading(true);
 
-        // Simulate payment delay
-        await new Promise((resolve) => setTimeout(resolve, 2500));
+        try {
+            // 1. Create the Order
+            const { data: orderData, error: orderError } = await supabase
+                .from("orders")
+                .insert({
+                    user_id: user.id,
+                    full_name: formData.fullName,
+                    email: formData.email,
+                    address: formData.address,
+                    city: formData.city,
+                    postal_code: formData.postalCode,
+                    delivery_method: formData.deliveryMethod,
+                    payment_method: formData.paymentMethod,
+                    total: finalTotal
+                })
+                .select()
+                .single();
 
-        clearCart();
-        toast.success("Order placed successfully!");
-        navigate("/order-success");
-        setLoading(false);
+            if (orderError) throw orderError;
+
+            // 2. Create Order Items
+            const orderItems = items.map(item => ({
+                order_id: orderData.id,
+                product_id: item.id,
+                quantity: item.quantity,
+                price: item.price,
+                image_url: item.image
+            }));
+
+            const { error: itemsError } = await supabase
+                .from("order_items")
+                .insert(orderItems);
+
+            if (itemsError) throw itemsError;
+
+            // Success!
+            clearCart();
+            toast.success("Order placed successfully!");
+            navigate("/order-success");
+        } catch (error: any) {
+            console.error("Error placing order:", error);
+            toast.error(error.message || "Failed to place order. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (items.length === 0) {

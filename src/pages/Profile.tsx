@@ -1,9 +1,42 @@
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { FiPackage, FiLogOut, FiUser } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
+
+interface Order {
+    id: string;
+    created_at: string;
+    total: number;
+    status: string;
+}
 
 export default function Profile() {
     const { user, signOut } = useAuth();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) return;
+
+        async function fetchOrders() {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("user_id", user?.id)
+                .order("created_at", { ascending: false });
+
+            if (error) {
+                console.error("Error fetching orders:", error);
+            } else {
+                setOrders(data || []);
+            }
+            setLoading(false);
+        }
+
+        fetchOrders();
+    }, [user]);
 
     if (!user) {
         return (
@@ -16,14 +49,8 @@ export default function Profile() {
         );
     }
 
-    // Mock Orders
-    const orders = [
-        { id: "ORD-7782", date: "Jan 12, 2024", total: 124.50, status: "Delivered" },
-        { id: "ORD-9921", date: "Jan 03, 2024", total: 45.00, status: "Processing" },
-    ];
-
     return (
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto px-4 py-12 pt-28">
             <div className="flex justify-between items-center mb-12">
                 <h1 className="text-3xl font-bold flex items-center gap-3">
                     <FiUser /> My Account
@@ -41,14 +68,14 @@ export default function Profile() {
                 {/* User Info */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border h-fit">
                     <h2 className="font-bold text-lg mb-4">Profile Details</h2>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-4 text-sm">
                         <div>
-                            <span className="block text-gray-500">Email</span>
-                            <span className="font-medium">{user.email}</span>
+                            <span className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Email</span>
+                            <span className="font-bold text-gray-900">{user.email}</span>
                         </div>
                         <div>
-                            <span className="block text-gray-500">Member Since</span>
-                            <span className="font-medium">{new Date(user.created_at || "").toLocaleDateString()}</span>
+                            <span className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Member Since</span>
+                            <span className="font-bold text-gray-900">{new Date(user.created_at || "").toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
@@ -60,21 +87,34 @@ export default function Profile() {
                     </h2>
 
                     <div className="space-y-4">
-                        {orders.map(order => (
-                            <div key={order.id} className="bg-white p-4 rounded-lg border flex justify-between items-center hover:shadow-md transition">
-                                <div>
-                                    <p className="font-bold text-gray-900">{order.id}</p>
-                                    <p className="text-xs text-gray-500">{order.date}</p>
+                        {loading ? (
+                            <p className="text-gray-500 text-sm">Loading orders...</p>
+                        ) : orders.length > 0 ? (
+                            orders.map(order => (
+                                <div key={order.id} className="bg-white p-6 rounded-2xl border flex justify-between items-center hover:shadow-lg transition-all group">
+                                    <div>
+                                        <p className="font-black text-gray-900 uppercase text-xs tracking-tighter mb-1">Order #{order.id.slice(0, 8)}</p>
+                                        <p className="text-xs text-gray-500 font-medium">{new Date(order.created_at).toLocaleDateString(undefined, {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-black text-pink-600 text-lg mb-1">${Number(order.total).toFixed(2)}</p>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                                            }`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-pink-500">${order.total.toFixed(2)}</p>
-                                    <span className={`text-xs px-2 py-1 rounded-full ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                                        }`}>
-                                        {order.status}
-                                    </span>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-gray-50 rounded-2xl p-12 text-center border border-dashed border-gray-200">
+                                <p className="text-gray-500 font-medium">You haven't placed any orders yet.</p>
+                                <Link to="/shop" className="text-pink-500 font-bold hover:underline text-sm mt-2 inline-block">Start Shopping</Link>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 

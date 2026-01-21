@@ -11,6 +11,7 @@ interface Product {
     price: number;
     discount_price: number | null;
     category_id: string;
+    image_url: string | null;
 }
 
 interface ProductImage {
@@ -62,9 +63,10 @@ export default function Shop() {
     };
 
     const updateSearch = (query: string) => {
-        if (!query) searchParams.delete("search");
-        else searchParams.set("search", query);
-        setSearchParams(searchParams);
+        const newParams = new URLSearchParams(searchParams);
+        if (!query) newParams.delete("search");
+        else newParams.set("search", query);
+        setSearchParams(newParams);
     };
 
     const filteredProducts = products.filter((product) => {
@@ -152,9 +154,17 @@ export default function Shop() {
                     ) : filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredProducts.map((prod) => {
-                                const productImages = images
+                                // Combine main image (if exists) with gallery images
+                                const galleryImages = images
                                     .filter((img) => img.product_id === prod.id)
                                     .map((img) => img.image_url);
+
+                                const allImages = [
+                                    prod.image_url,
+                                    ...galleryImages.filter(url => url !== prod.image_url)
+                                ].filter(Boolean) as string[];
+
+                                const finalImages = allImages.length > 0 ? allImages : ["/placeholder.png"];
 
                                 return (
                                     <ProductCard
@@ -163,14 +173,14 @@ export default function Shop() {
                                         name={prod.name}
                                         price={prod.price}
                                         discountPrice={prod.discount_price || undefined}
-                                        images={productImages.length > 0 ? productImages : ["/placeholder.png"]}
+                                        images={finalImages}
                                         onOpenQuickView={(img) => {
                                             setSelectedProduct({
                                                 id: prod.id,
                                                 name: prod.name,
                                                 price: prod.price,
                                                 discountPrice: prod.discount_price || undefined,
-                                                images: productImages.length > 0 ? productImages : ["/placeholder.png"],
+                                                images: finalImages,
                                                 initialImage: img
                                             });
                                             setIsQuickViewOpen(true);

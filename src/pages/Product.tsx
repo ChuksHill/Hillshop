@@ -11,6 +11,7 @@ interface Product {
     description: string | null;
     price: number;
     discount_price: number | null;
+    image_url: string | null;
 }
 
 export default function Product() {
@@ -48,10 +49,21 @@ export default function Product() {
                 .select("image_url")
                 .eq("product_id", id);
 
-            const imgUrls = imgData?.map((i: { image_url: string }) => i.image_url) || [];
-            setImages(imgUrls);
-            if (imgUrls.length > 0) setSelectedImage(imgUrls[0]);
-            else setSelectedImage("/placeholder.png");
+            const galleryUrls = imgData?.map((i: { image_url: string }) => i.image_url) || [];
+
+            // Combine main image with gallery
+            const allImages = [
+                prodData.image_url,
+                ...galleryUrls.filter(url => url !== prodData.image_url)
+            ].filter(Boolean) as string[];
+
+            setImages(allImages);
+
+            if (allImages.length > 0) {
+                setSelectedImage(allImages[0]);
+            } else {
+                setSelectedImage("/placeholder.png");
+            }
 
             setLoading(false);
         }
@@ -118,8 +130,8 @@ export default function Product() {
                                         key={idx}
                                         onClick={() => setSelectedImage(img)}
                                         className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all ${selectedImage === img
-                                                ? "border-pink-500 scale-95 shadow-lg"
-                                                : "border-transparent opacity-60 hover:opacity-100"
+                                            ? "border-pink-500 scale-95 shadow-lg"
+                                            : "border-transparent opacity-60 hover:opacity-100"
                                             }`}
                                     >
                                         <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
@@ -139,8 +151,8 @@ export default function Product() {
                                 <button
                                     onClick={() => setIsWishlisted(!isWishlisted)}
                                     className={`p-3 rounded-full border transition-all active:scale-90 ${isWishlisted
-                                            ? "bg-pink-50 border-pink-100 text-pink-500 shadow-md"
-                                            : "hover:bg-gray-50 border-gray-100 text-gray-400"
+                                        ? "bg-pink-50 border-pink-100 text-pink-500 shadow-md"
+                                        : "hover:bg-gray-50 border-gray-100 text-gray-400"
                                         }`}
                                 >
                                     <FiHeart className={isWishlisted ? "fill-current" : ""} size={24} />

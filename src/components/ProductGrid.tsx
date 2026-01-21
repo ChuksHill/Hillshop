@@ -10,6 +10,7 @@ interface Product {
   price: number;
   discount_price: number | null;
   category_id: string;
+  image_url: string | null;
 }
 
 interface ProductImage {
@@ -71,13 +72,18 @@ export default function CategorySection() {
             {products
               .filter((p) => p.category_id === category.id)
               .map((prod) => {
-                const productImages = images
+                const galleryImages = images
                   .filter((img) => img.product_id === prod.id)
                   .map((img) => img.image_url);
 
+                const finalImages = [
+                  prod.image_url,
+                  ...galleryImages.filter(url => url !== prod.image_url)
+                ].filter(Boolean) as string[];
+
                 const imagesToShow =
-                  productImages.length > 0
-                    ? productImages
+                  finalImages.length > 0
+                    ? finalImages
                     : ["/placeholder.png"];
 
                 return (

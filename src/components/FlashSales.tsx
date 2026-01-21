@@ -10,6 +10,7 @@ interface Product {
     name: string;
     price: number;
     discount_price: number | null;
+    image_url: string | null;
 }
 
 export default function FlashSales() {
@@ -77,9 +78,16 @@ export default function FlashSales() {
                 <div className="p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {products.map((prod) => {
-                            const productImages = images
+                            const galleryImages = images
                                 .filter((img) => img.product_id === prod.id)
                                 .map((img) => img.image_url);
+
+                            const finalImages = [
+                                prod.image_url,
+                                ...galleryImages.filter(url => url !== prod.image_url)
+                            ].filter(Boolean) as string[];
+
+                            const imagesToShow = finalImages.length > 0 ? finalImages : ["/placeholder.png"];
 
                             return (
                                 <div key={prod.id} className="relative">
@@ -88,14 +96,14 @@ export default function FlashSales() {
                                         name={prod.name}
                                         price={prod.price}
                                         discountPrice={prod.discount_price || undefined}
-                                        images={productImages.length > 0 ? productImages : ["/placeholder.png"]}
+                                        images={imagesToShow}
                                         onOpenQuickView={(img) => {
                                             setSelectedProduct({
                                                 id: prod.id,
                                                 name: prod.name,
                                                 price: prod.price,
                                                 discountPrice: prod.discount_price || undefined,
-                                                images: productImages.length > 0 ? productImages : ["/placeholder.png"],
+                                                images: imagesToShow,
                                                 initialImage: img
                                             });
                                             setIsQuickViewOpen(true);
