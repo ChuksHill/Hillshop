@@ -1,4 +1,8 @@
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { FiHeart } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 
 interface ProductCardProps {
@@ -12,6 +16,26 @@ interface ProductCardProps {
 
 export default function ProductCard({ id, name, price, discountPrice, images, onOpenQuickView }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  // Fetch reviews for this product
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("rating")
+        .eq("product_id", id);
+
+      if (data && data.length > 0) {
+        const avg = data.reduce((sum, review) => sum + review.rating, 0) / data.length;
+        setAverageRating(avg);
+        setReviewCount(data.length);
+      }
+    };
+    fetchReviews();
+  }, [id]);
 
   const handleAddToCart = () => {
     addToCart({
@@ -42,6 +66,23 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
             <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 font-medium">No Image</div>
           )}
 
+          {/* Wishlist Heart */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(id);
+            }}
+            className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-md z-10"
+          >
+            <FiHeart
+              className={`transition-all ${isInWishlist(id)
+                  ? "fill-pink-500 text-pink-500 scale-110"
+                  : "text-gray-600 hover:text-pink-500"
+                }`}
+              size={18}
+            />
+          </button>
+
           {/* Subtle View Overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
             <span className="bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 shadow-lg">
@@ -51,6 +92,20 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
         </div>
 
         <h3 className="font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-pink-500 transition-colors">{name}</h3>
+
+        {/* Reviews */}
+        {averageRating !== null && (
+          <div className="flex items-center gap-1 mb-2">
+            <div className="flex text-yellow-400">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className={`w-3 h-3 ${i < Math.round(averageRating) ? 'fill-current' : 'fill-gray-200'}`} viewBox="0 0 20 20">
+                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs text-gray-500 font-medium">({reviewCount})</span>
+          </div>
+        )}
 
         <div className="mb-4">
           {discountPrice ? (

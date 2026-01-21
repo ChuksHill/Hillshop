@@ -71,39 +71,29 @@ export default function Checkout() {
         setLoading(true);
 
         try {
-            // 1. Create the Order
-            const { data: orderData, error: orderError } = await supabase
-                .from("orders")
-                .insert({
-                    user_id: user.id,
-                    full_name: formData.fullName,
-                    email: formData.email,
-                    address: formData.address,
-                    city: formData.city,
-                    postal_code: formData.postalCode,
-                    delivery_method: formData.deliveryMethod,
-                    payment_method: formData.paymentMethod,
-                    total: finalTotal
-                })
-                .select()
-                .single();
-
-            if (orderError) throw orderError;
-
-            // 2. Create Order Items
+            // Prepare items for RPC
             const orderItems = items.map(item => ({
-                order_id: orderData.id,
                 product_id: item.id,
-                quantity: item.quantity,
-                price: item.price,
-                image_url: item.image
+                quantity: item.quantity
             }));
 
-            const { error: itemsError } = await supabase
-                .from("order_items")
-                .insert(orderItems);
+            // Call the secure atomic RPC function
+            const { data, error: rpcError } = await supabase.rpc('handle_place_order', {
+                p_full_name: formData.fullName,
+                p_email: formData.email,
+                p_address: formData.address,
+                p_city: formData.city,
+                p_postal_code: formData.postalCode,
+                p_delivery_method: formData.deliveryMethod,
+                p_payment_method: formData.paymentMethod,
+                p_items: orderItems
+            });
 
-            if (itemsError) throw itemsError;
+            if (rpcError) throw rpcError;
+
+            if (data && data.success === false) {
+                throw new Error(data.error || "Failed to place order");
+            }
 
             // Success!
             clearCart();
@@ -296,18 +286,51 @@ export default function Checkout() {
                                                 <div>
                                                     <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Card Number</label>
                                                     <div className="relative">
-                                                        <input name="cardNumber" value={formData.cardNumber} onChange={handleInputChange} required type="text" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none" placeholder="0000 0000 0000 0000" />
+                                                        <input
+                                                            name="cardNumber"
+                                                            value={formData.cardNumber}
+                                                            onChange={handleInputChange}
+                                                            required
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
+                                                            maxLength={16}
+                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
+                                                            placeholder="0000 0000 0000 0000"
+                                                        />
                                                         <FiLock className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300" />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Expiry</label>
-                                                        <input name="expiry" value={formData.expiry} onChange={handleInputChange} required type="text" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none" placeholder="MM/YY" />
+                                                        <input
+                                                            name="expiry"
+                                                            value={formData.expiry}
+                                                            onChange={handleInputChange}
+                                                            required
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9/]*"
+                                                            maxLength={5}
+                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
+                                                            placeholder="MM/YY"
+                                                        />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">CVC</label>
-                                                        <input name="cvc" value={formData.cvc} onChange={handleInputChange} required type="text" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none" placeholder="123" />
+                                                        <input
+                                                            name="cvc"
+                                                            value={formData.cvc}
+                                                            onChange={handleInputChange}
+                                                            required
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
+                                                            maxLength={3}
+                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
+                                                            placeholder="123"
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>

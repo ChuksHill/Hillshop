@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 import { FiArrowLeft, FiShoppingCart, FiMinus, FiPlus, FiHeart, FiShield, FiTruck, FiRefreshCw } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -12,19 +14,31 @@ interface Product {
     price: number;
     discount_price: number | null;
     image_url: string | null;
+    stock: number;
+}
+
+interface Review {
+    id: string;
+    rating: number;
+    comment: string;
+    created_at: string;
 }
 
 export default function Product() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
+    const { user } = useAuth();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [images, setImages] = useState<string[]>([]);
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
-    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+    const [submittingReview, setSubmittingReview] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -44,10 +58,20 @@ export default function Product() {
 
             setProduct(prodData);
 
+            // Fetch gallery images
             const { data: imgData } = await supabase
                 .from("product_images")
                 .select("image_url")
                 .eq("product_id", id);
+
+            // Fetch reviews
+            const { data: reviewData } = await supabase
+                .from("reviews")
+                .select("*")
+                .eq("product_id", id)
+                .order("created_at", { ascending: false });
+
+            setReviews(reviewData || []);
 
             const galleryUrls = imgData?.map((i: { image_url: string }) => i.image_url) || [];
 
@@ -73,6 +97,12 @@ export default function Product() {
 
     const handleAddToCart = () => {
         if (!product) return;
+
+        if (product.stock < quantity) {
+            toast.error(`Only ${product.stock} items left in stock`);
+            return;
+        }
+
         addToCart({
             id: product.id,
             name: product.name,
@@ -81,6 +111,49 @@ export default function Product() {
             quantity: quantity
         });
         toast.success(`${quantity} ${quantity > 1 ? 'items' : 'item'} added to cart!`);
+    };
+
+    const handleSubmitReview = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) {
+            toast.error("Please sign in to leave a review");
+            navigate("/login");
+            return;
+        }
+
+        if (!id) return;
+
+        setSubmittingReview(true);
+        const { error } = await supabase
+            .from("reviews")
+            .insert({
+                product_id: id,
+                user_id: user.id,
+                rating: newReview.rating,
+                comment: newReview.comment
+            });
+
+        if (error) {
+            console.error("Review submission error:", error);
+            if (error.message.includes("duplicate")) {
+                toast.error("You've already reviewed this product");
+            } else if (error.message.includes("policy")) {
+                toast.error("Permission denied. Please make sure you're signed in.");
+            } else {
+                toast.error(`Failed to submit review: ${error.message}`);
+            }
+        } else {
+            toast.success("Review submitted successfully!");
+            setNewReview({ rating: 5, comment: "" });
+            // Refresh reviews
+            const { data } = await supabase
+                .from("reviews")
+                .select("*")
+                .eq("product_id", id)
+                .order("created_at", { ascending: false });
+            setReviews(data || []);
+        }
+        setSubmittingReview(false);
     };
 
     if (loading) return (
@@ -149,13 +222,13 @@ export default function Product() {
                                     {product.name}
                                 </h1>
                                 <button
-                                    onClick={() => setIsWishlisted(!isWishlisted)}
-                                    className={`p-3 rounded-full border transition-all active:scale-90 ${isWishlisted
+                                    onClick={() => id && toggleWishlist(id)}
+                                    className={`p-3 rounded-full border transition-all active:scale-90 ${id && isInWishlist(id)
                                         ? "bg-pink-50 border-pink-100 text-pink-500 shadow-md"
                                         : "hover:bg-gray-50 border-gray-100 text-gray-400"
                                         }`}
                                 >
-                                    <FiHeart className={isWishlisted ? "fill-current" : ""} size={24} />
+                                    <FiHeart className={id && isInWishlist(id) ? "fill-current" : ""} size={24} />
                                 </button>
                             </div>
 
@@ -170,8 +243,20 @@ export default function Product() {
                                 )}
                             </div>
 
-                            <p className="text-gray-500 text-lg leading-relaxed max-w-lg">
-                                {product.description || "Indulge in the perfect blend of style and functionality. This premium selection from Hillshop is designed to elevate your everyday experience with unmatched quality."}
+                            <div className="flex items-center gap-4 mb-4">
+                                {product.stock > 0 ? (
+                                    <span className="text-xs font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                                        In Stock ({product.stock} units)
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-black text-red-600 bg-red-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                                        Out of Stock
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="text-gray-500 text-lg leading-relaxed max-w-lg mb-4">
+                                {product.description || "No description available for this product."}
                             </p>
                         </div>
 
@@ -197,9 +282,10 @@ export default function Product() {
 
                                 <button
                                     onClick={handleAddToCart}
-                                    className="flex-1 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-black transition-all flex items-center justify-center gap-3 shadow-2xl shadow-gray-200 active:scale-[0.98]"
+                                    disabled={product.stock === 0}
+                                    className="flex-1 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-black transition-all flex items-center justify-center gap-3 shadow-2xl shadow-gray-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <FiShoppingCart /> Add to Cart
+                                    <FiShoppingCart /> {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
                                 </button>
                             </div>
 
@@ -226,6 +312,106 @@ export default function Product() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Reviews Section */}
+                <div className="mt-24 border-t border-gray-100 pt-16">
+                    <div className="flex items-center justify-between mb-12">
+                        <h2 className="text-3xl font-black text-gray-900 tracking-tight">Customer Reviews</h2>
+                        <div className="flex items-center gap-2">
+                            <div className="flex text-yellow-400">
+                                {[...Array(5)].map((_, i) => (
+                                    <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
+                                ))}
+                            </div>
+                            <span className="font-bold text-gray-900">{reviews.length} Reviews</span>
+                        </div>
+                    </div>
+
+                    {/* Write a Review Form */}
+                    {user ? (
+                        <form onSubmit={handleSubmitReview} className="mb-12 bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                            <h3 className="text-xl font-black text-gray-900 mb-6">Write a Review</h3>
+
+                            {/* Star Rating Selector */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-bold text-gray-700 mb-3">Your Rating</label>
+                                <div className="flex gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setNewReview({ ...newReview, rating: star })}
+                                            className="transition-transform hover:scale-110"
+                                        >
+                                            <svg
+                                                className={`w-8 h-8 ${star <= newReview.rating
+                                                    ? "fill-yellow-400 text-yellow-400"
+                                                    : "fill-gray-200 text-gray-200"
+                                                    }`}
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                            </svg>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Comment Textarea */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-bold text-gray-700 mb-3">Your Review</label>
+                                <textarea
+                                    value={newReview.comment}
+                                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                    required
+                                    rows={4}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none resize-none"
+                                    placeholder="Share your thoughts about this product..."
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={submittingReview}
+                                className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submittingReview ? "Submitting..." : "Submit Review"}
+                            </button>
+                        </form>
+                    ) : (
+                        <div className="mb-12 bg-gray-50 rounded-3xl p-8 border border-dashed border-gray-200 text-center">
+                            <p className="text-gray-600 font-medium">
+                                Please <button onClick={() => navigate("/login")} className="text-pink-500 font-bold hover:underline">sign in</button> to leave a review
+                            </p>
+                        </div>
+                    )}
+
+                    {reviews.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {reviews.map((review) => (
+                                <div key={review.id} className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex text-yellow-400">
+                                            {[...Array(review.rating)].map((_, i) => (
+                                                <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
+                                            ))}
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <p className="text-gray-600 leading-relaxed italic">"{review.comment}"</p>
+                                    <div className="mt-6 flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-[10px] font-black">HS</div>
+                                        <span className="text-sm font-bold text-gray-900">Verified Buyer</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                            <p className="text-gray-500 font-medium">No reviews yet. Be the first to share your experience!</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -43,17 +43,45 @@ export default function Shop() {
     useEffect(() => {
         async function fetchData() {
             setLoading(true);
-            const { data: prodData } = await supabase.from("products").select("*");
-            const { data: catData } = await supabase.from("categories").select("*");
+
+            // Start building the query
+            let query = supabase.from("products").select("*");
+
+            // Server-side Category Filter
+            if (selectedCategory && selectedCategory.toLowerCase() !== "all") {
+                // We need the category ID. Since categories don't change often, 
+                // we'll fetch them if we haven't already, or just use a join if supported.
+                // For simplicity, we'll fetch categories first or use the local state if available.
+                const { data: catData } = await supabase.from("categories").select("*");
+                if (catData) {
+                    setCategories(catData);
+                    const catId = catData.find(c => c.name.toLowerCase() === selectedCategory.toLowerCase())?.id;
+                    if (catId) {
+                        query = query.eq("category_id", catId);
+                    }
+                }
+            } else {
+                // Just fetch categories if not already fetched
+                if (categories.length === 0) {
+                    const { data: catData } = await supabase.from("categories").select("*");
+                    setCategories(catData || []);
+                }
+            }
+
+            // Server-side Search Filter
+            if (searchQuery) {
+                query = query.ilike("name", `%${searchQuery}%`);
+            }
+
+            const { data: prodData } = await query;
             const { data: imgData } = await supabase.from("product_images").select("*");
 
             setProducts(prodData || []);
-            setCategories(catData || []);
             setImages(imgData || []);
             setLoading(false);
         }
         fetchData();
-    }, []);
+    }, [selectedCategory, searchQuery]);
 
     const updateCategory = (catName: string) => {
         const newParams = new URLSearchParams(searchParams);
@@ -69,17 +97,7 @@ export default function Shop() {
         setSearchParams(newParams);
     };
 
-    const filteredProducts = products.filter((product) => {
-        const matchesCategory =
-            selectedCategory.toLowerCase() === "all" ||
-            categories.find((c) => c.id === product.category_id)?.name?.toLowerCase() === selectedCategory.toLowerCase();
-
-        const matchesSearch = product.name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
-
-        return matchesCategory && matchesSearch;
-    });
+    const filteredProducts = products;
 
     return (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-28">

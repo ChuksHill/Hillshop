@@ -38,18 +38,37 @@ export default function Login() {
 
         try {
             if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                 });
-                if (error) throw error;
-                alert("Check your email for the confirmation link!");
+                if (error) {
+                    // Handle specific error cases
+                    if (error.message.includes("already registered")) {
+                        throw new Error("This email is already registered. Please sign in instead.");
+                    }
+                    throw error;
+                }
+
+                // Check if email confirmation is required
+                if (data.user && !data.session) {
+                    toast.success("Account created! Check your email for confirmation (or check spam folder).");
+                } else {
+                    toast.success("Account created successfully! You're now signed in.");
+                    navigate("/");
+                }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes("Invalid login credentials")) {
+                        throw new Error("Invalid email or password. Please try again.");
+                    }
+                    throw error;
+                }
+                toast.success("Welcome back!");
                 navigate("/");
             }
         } catch (err: any) {

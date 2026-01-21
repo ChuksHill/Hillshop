@@ -7,6 +7,8 @@ import {
   FiSearch,
   FiUser,
   FiShoppingCart,
+  FiChevronDown,
+  FiLogOut,
 } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -16,8 +18,9 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { cartCount } = useCart();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -102,9 +105,43 @@ export default function Header() {
             </button>
 
             {user ? (
-              <Link to="/profile" className={`flex items-center gap-2 p-1 rounded transition group ${textStyle}`}>
-                <Icon><FiUser /></Icon>
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-pink-50 ${textStyle}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-black">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <FiChevronDown className="text-sm" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Signed in as</p>
+                      <p className="text-sm font-bold text-gray-900 truncate mt-1">{user.email}</p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+                    >
+                      <FiUser /> My Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setUserMenuOpen(false);
+                        navigate("/");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-red-600 font-medium"
+                    >
+                      <FiLogOut /> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link to="/login" className={`hover:text-pink-500 transition-colors ${textStyle}`}>
                 <Icon><FiUser /></Icon>
@@ -173,7 +210,11 @@ export default function Header() {
           <div className="h-[1px] bg-gray-100 w-full" />
 
           <div className="flex gap-12 text-3xl justify-center py-4">
-            <Link to="/login" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition"><FiUser /></Link>
+            {user ? (
+              <Link to="/profile" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition"><FiUser /></Link>
+            ) : (
+              <Link to="/login" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition"><FiUser /></Link>
+            )}
             <Link to="/cart" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition relative">
               <FiShoppingCart />
               {cartCount > 0 && (
