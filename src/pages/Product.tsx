@@ -12,6 +12,7 @@ interface Product {
     name: string;
     description: string | null;
     price: number;
+    price_id?: string; // Stripe Price ID
     discount_price: number | null;
     image_url: string | null;
     stock: number;
@@ -107,6 +108,7 @@ export default function Product() {
             id: product.id,
             name: product.name,
             price: product.discount_price || product.price,
+            price_id: product.price_id,
             image: selectedImage,
             quantity: quantity
         });

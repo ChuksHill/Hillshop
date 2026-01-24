@@ -9,13 +9,14 @@ interface ProductCardProps {
   id: string;
   name: string;
   price: number;
+  priceId?: string;
   discountPrice?: number;
   images: string[];
   onOpenQuickView?: (initialImage?: string) => void;
 }
 
-export default function ProductCard({ id, name, price, discountPrice, images, onOpenQuickView }: ProductCardProps) {
-  const { addToCart } = useCart();
+export default function ProductCard({ id, name, price, priceId, discountPrice, images, onOpenQuickView }: ProductCardProps) {
+  const { addToCart } = useCart(); // Uses updated context with server sync
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
@@ -42,7 +43,8 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
       id,
       name,
       price: discountPrice || price,
-      image: images[0] || "/placeholder.png"
+      price_id: priceId,
+      image: images[0] || "/placeholder.png",
     });
     toast.success("Added to cart!");
   };
@@ -76,8 +78,8 @@ export default function ProductCard({ id, name, price, discountPrice, images, on
           >
             <FiHeart
               className={`transition-all ${isInWishlist(id)
-                  ? "fill-pink-500 text-pink-500 scale-110"
-                  : "text-gray-600 hover:text-pink-500"
+                ? "fill-pink-500 text-pink-500 scale-110"
+                : "text-gray-600 hover:text-pink-500"
                 }`}
               size={18}
             />

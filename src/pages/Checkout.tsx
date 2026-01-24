@@ -55,6 +55,10 @@ export default function Checkout() {
                 return;
             }
         }
+
+        // REMOVED BLOCKING CHECK: We now allow items without price_id to proceed to payment selection.
+        // This is to support COD/PayPal which may not require Stripe price IDs.
+
         setCurrentStep(next);
         window.scrollTo(0, 0);
     };
@@ -68,13 +72,27 @@ export default function Checkout() {
             return;
         }
 
+        // Mock Mode: Pass through validation (logic removed)
+
         setLoading(true);
 
         try {
+            // Ensure user profile exists
+            const userPayload = { id: user.id, email: user.email };
+
+            // Update 'profiles' table
+            const { error: profilesError } = await supabase.from('profiles').upsert(userPayload, { onConflict: 'id' });
+
+            if (profilesError) {
+                console.error("Failed to upsert to 'profiles' table:", profilesError);
+                // We continue even if profile update fails, as the order might still succeed
+            }
+
             // Prepare items for RPC
             const orderItems = items.map(item => ({
                 product_id: item.id,
-                quantity: item.quantity
+                quantity: item.quantity,
+                price_id: item.price_id
             }));
 
             // Call the secure atomic RPC function
@@ -106,6 +124,8 @@ export default function Checkout() {
             setLoading(false);
         }
     };
+
+
 
     if (items.length === 0) {
         useEffect(() => { navigate("/cart"); }, []);

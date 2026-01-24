@@ -9,6 +9,7 @@ interface Product {
     id: string;
     name: string;
     price: number;
+    price_id?: string;
     discount_price: number | null;
     image_url: string | null;
 }
@@ -95,6 +96,7 @@ export default function FlashSales() {
                                         id={prod.id}
                                         name={prod.name}
                                         price={prod.price}
+                                        priceId={prod.price_id}
                                         discountPrice={prod.discount_price || undefined}
                                         images={imagesToShow}
                                         onOpenQuickView={(img) => {

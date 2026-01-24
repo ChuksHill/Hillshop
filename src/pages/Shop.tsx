@@ -9,6 +9,7 @@ interface Product {
     id: string;
     name: string;
     price: number;
+    price_id?: string;
     discount_price: number | null;
     category_id: string;
     image_url: string | null;
@@ -190,6 +191,7 @@ export default function Shop() {
                                         id={prod.id}
                                         name={prod.name}
                                         price={prod.price}
+                                        priceId={prod.price_id}
                                         discountPrice={prod.discount_price || undefined}
                                         images={finalImages}
                                         onOpenQuickView={(img) => {

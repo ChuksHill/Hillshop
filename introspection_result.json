@@ -1,0 +1,102 @@
+{
+  "products": {
+    "name": "products",
+    "accessible": true,
+    "rowCount": 1,
+    "columns": [
+      "id",
+      "name",
+      "description",
+      "stock",
+      "category_id",
+      "brand",
+      "is_active",
+      "created_by",
+      "created_at",
+      "updated_at",
+      "updated_by",
+      "price",
+      "discount_price",
+      "image_url"
+    ],
+    "insertPermission": "RLS_DENIED",
+    "error": null,
+    "insertError": "new row violates row-level security policy for table \"products\""
+  },
+  "product_images": {
+    "name": "product_images",
+    "accessible": true,
+    "rowCount": 1,
+    "columns": [
+      "id",
+      "product_id",
+      "image_url",
+      "created_at",
+      "updated_at",
+      "updated_by",
+      "is_primary"
+    ],
+    "insertPermission": "ALLOWED_BUT_FAILED_VALIDATION",
+    "error": null,
+    "insertError": "null value in column \"product_id\" of relation \"product_images\" violates not-null constraint"
+  },
+  "reviews": {
+    "name": "reviews",
+    "accessible": true,
+    "rowCount": 0,
+    "columns": [],
+    "insertPermission": "RLS_DENIED",
+    "error": null,
+    "status": "EMPTY_BUT_ACCESSIBLE",
+    "insertError": "new row violates row-level security policy for table \"reviews\""
+  },
+  "orders": {
+    "name": "orders",
+    "accessible": true,
+    "rowCount": 0,
+    "columns": [],
+    "insertPermission": "ALLOWED_AND_SUCCEEDED",
+    "error": null,
+    "status": "EMPTY_BUT_ACCESSIBLE"
+  },
+  "order_items": {
+    "name": "order_items",
+    "accessible": true,
+    "rowCount": 0,
+    "columns": [],
+    "insertPermission": "RLS_DENIED",
+    "error": null,
+    "status": "EMPTY_BUT_ACCESSIBLE",
+    "insertError": "new row violates row-level security policy for table \"order_items\""
+  },
+  "users": {
+    "name": "users",
+    "accessible": false,
+    "rowCount": 0,
+    "columns": [],
+    "insertPermission": "unknown",
+    "error": "Could not find the table 'public.users' in the schema cache",
+    "status": "ACCESS_DENIED_OR_ERROR"
+  },
+  "profiles": {
+    "name": "profiles",
+    "accessible": true,
+    "rowCount": 1,
+    "columns": [
+      "id",
+      "email",
+      "full_name",
+      "avatar_url",
+      "created_at",
+      "role"
+    ],
+    "insertPermission": "RLS_DENIED",
+    "error": null,
+    "insertError": "new row violates row-level security policy for table \"profiles\""
+  },
+  "rpc_handle_place_order": {
+    "exists": true,
+    "error": null,
+    "success": true
+  }
+}

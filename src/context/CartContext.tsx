@@ -5,6 +5,7 @@ export interface CartItem {
     id: string;
     name: string;
     price: number;
+    price_id?: string; // Stripe/DB Price ID
     image: string;
     quantity: number;
 }
