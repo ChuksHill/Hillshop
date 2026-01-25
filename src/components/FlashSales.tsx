@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import ProductCard from "./ProductCard";
-import QuickView from "./QuickView";
 import { FiZap, FiChevronRight } from "react-icons/fi";
 
 interface Product {
@@ -18,8 +17,7 @@ export default function FlashSales() {
     const [products, setProducts] = useState<Product[]>([]);
     const [images, setImages] = useState<any[]>([]);
     const [seconds, setSeconds] = useState(12 * 3600 + 45 * 60); // 12h 45m
-    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-    const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
 
     // Countdown Timer
     useEffect(() => {
@@ -99,17 +97,6 @@ export default function FlashSales() {
                                         priceId={prod.price_id}
                                         discountPrice={prod.discount_price || undefined}
                                         images={imagesToShow}
-                                        onOpenQuickView={(img) => {
-                                            setSelectedProduct({
-                                                id: prod.id,
-                                                name: prod.name,
-                                                price: prod.price,
-                                                discountPrice: prod.discount_price || undefined,
-                                                images: imagesToShow,
-                                                initialImage: img
-                                            });
-                                            setIsQuickViewOpen(true);
-                                        }}
                                     />
                                     {/* Stock Bar Mock */}
                                     <div className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
@@ -122,12 +109,6 @@ export default function FlashSales() {
                     </div>
                 </div>
             </div>
-
-            <QuickView
-                product={selectedProduct}
-                isOpen={isQuickViewOpen}
-                onClose={() => setIsQuickViewOpen(false)}
-            />
         </section>
     );
 }

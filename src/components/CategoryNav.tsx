@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
-import QuickView from "./QuickView";
+
 
 interface Product {
   id: string;
@@ -28,9 +28,6 @@ export default function CategorySection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
 
-  // Quick View State
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,16 +83,7 @@ export default function CategorySection() {
                     price={prod.price}
                     discountPrice={prod.discount_price || undefined}
                     images={imagesToShow}
-                    onOpenQuickView={() => {
-                      setSelectedProduct({
-                        id: prod.id,
-                        name: prod.name,
-                        price: prod.price,
-                        discountPrice: prod.discount_price || undefined,
-                        images: imagesToShow
-                      });
-                      setIsQuickViewOpen(true);
-                    }}
+
                   />
                 );
               })}
@@ -103,11 +91,7 @@ export default function CategorySection() {
         </div>
       ))}
 
-      <QuickView
-        product={selectedProduct}
-        isOpen={isQuickViewOpen}
-        onClose={() => setIsQuickViewOpen(false)}
-      />
+
     </div>
   );
 }

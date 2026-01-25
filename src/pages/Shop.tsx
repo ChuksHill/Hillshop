@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import ProductCard from "../components/ProductCard";
-// import QuickView from "../components/QuickView";
 import { FiFilter, FiSearch, FiX } from "react-icons/fi";
 
 interface Product {
@@ -33,9 +32,7 @@ export default function Shop() {
     const [images, setImages] = useState<ProductImage[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // // Quick View State
-    // const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-    // const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+    // Quick View State
 
     // Sync state with URL params
     const selectedCategory = searchParams.get("category") || "All";
@@ -194,17 +191,6 @@ export default function Shop() {
                                         priceId={prod.price_id}
                                         discountPrice={prod.discount_price || undefined}
                                         images={finalImages}
-                                    // onOpenQuickView={(img) => {
-                                    //     setSelectedProduct({
-                                    //         id: prod.id,
-                                    //         name: prod.name,
-                                    //         price: prod.price,
-                                    //         discountPrice: prod.discount_price || undefined,
-                                    //         images: finalImages,
-                                    //         initialImage: img
-                                    //     });
-                                    //     setIsQuickViewOpen(true);
-                                    // }}
                                     />
                                 );
                             })}
@@ -223,11 +209,7 @@ export default function Shop() {
                 </div>
             </div>
 
-            {/* <QuickView
-                product={selectedProduct}
-                isOpen={isQuickViewOpen}
-                onClose={() => setIsQuickViewOpen(false)}
-            /> */}
+
         </div>
     );
 }
