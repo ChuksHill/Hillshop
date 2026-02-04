@@ -14,24 +14,14 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { cartCount } = useCart();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Scroll Detection
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Close mobile menu/search on route change
   useEffect(() => {
@@ -44,6 +34,10 @@ export default function Header() {
     { name: "Shop", path: "/shop" },
   ];
 
+  if (isAdmin) {
+    navItems.push({ name: "Admin", path: "/admin" });
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -53,16 +47,15 @@ export default function Header() {
     }
   };
 
-  const isHome = location.pathname === "/";
-  const headerStickyStyle = isScrolled || !isHome
-    ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 py-3"
-    : "bg-transparent py-5";
+  // Always show solid background for reliability
+  const headerStickyStyle = "bg-white shadow-md border-b border-gray-100 py-3";
 
-  const textStyle = isScrolled || !isHome ? "text-gray-900" : "text-white";
-  const navTextStyle = isScrolled || !isHome ? "text-gray-700" : "text-white/90";
+  // Use dark text always since background is always white
+  const textStyle = "text-gray-900";
+  const navTextStyle = "text-gray-700";
 
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${headerStickyStyle}`}>
+    <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${headerStickyStyle}`}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between relative h-10">
 
@@ -77,7 +70,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
+          <nav className="hidden lg:flex items-center gap-10 text-sm font-bold tracking-wide">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -96,7 +89,7 @@ export default function Header() {
           </nav>
 
           {/* Desktop Icons */}
-          <div className="hidden md:flex items-center gap-6 text-xl relative z-10">
+          <div className="hidden lg:flex items-center gap-6 text-xl relative z-10">
             <button
               onClick={() => setSearchOpen(true)}
               className={`hover:text-pink-500 transition-colors ${textStyle}`}
@@ -122,6 +115,15 @@ export default function Header() {
                       <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Signed in as</p>
                       <p className="text-sm font-bold text-gray-900 truncate mt-1">{user.email}</p>
                     </div>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-pink-600 font-bold"
+                      >
+                        <FiUser /> Admin Panel
+                      </Link>
+                    )}
                     <Link
                       to="/profile"
                       onClick={() => setUserMenuOpen(false)}
@@ -157,8 +159,9 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className={`md:hidden text-2xl p-2 transition-all duration-300 active:scale-90 ${textStyle}`}
+            className={`lg:hidden text-2xl p-3 -mr-2 transition-all duration-300 active:scale-90 relative z-[70] ${textStyle}`}
             onClick={() => setOpen(!open)}
+            aria-label="Toggle menu"
           >
             {open ? <FiX /> : <FiMenu />}
           </button>
@@ -166,7 +169,9 @@ export default function Header() {
       </div>
 
       {/* Search Overlay */}
-      <div className={`absolute top-0 left-0 w-full bg-white shadow-xl border-b transition-all duration-500 origin-top overflow-hidden ${searchOpen ? "scale-y-100 opacity-100 h-24" : "scale-y-0 opacity-0 h-0"
+      <div className={`absolute top-0 left-0 w-full bg-white shadow-xl border-b transition-all duration-500 origin-top overflow-hidden z-40 ${searchOpen
+          ? "scale-y-100 opacity-100 h-24 pointer-events-auto"
+          : "scale-y-0 opacity-0 h-0 pointer-events-none"
         }`}>
         <div className="max-w-5xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center gap-4">
           <FiSearch className="text-gray-400 text-2xl" />
@@ -191,40 +196,96 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden fixed inset-x-0 bg-white shadow-2xl transition-all duration-500 border-t ${open ? "top-[70px] opacity-100 translate-y-0" : "-top-full opacity-0 -translate-y-10"
+        className={`lg:hidden fixed inset-x-0 bg-white/98 backdrop-blur-xl transition-all duration-500 border-t z-50 overflow-y-auto ${open
+          ? "top-[64px] bottom-0 opacity-100 translate-y-0 pointer-events-auto"
+          : "-top-full opacity-0 -translate-y-10 pointer-events-none"
           }`}
       >
-        <nav className="flex flex-col p-8 gap-8">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              className="text-2xl font-black text-gray-900 hover:text-pink-500 transition-colors flex justify-between items-center group"
-              onClick={() => setOpen(false)}
-            >
-              {item.name}
-              <span className="text-pink-500 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all font-light">&rarr;</span>
-            </Link>
-          ))}
+        <div className="p-6 space-y-8">
+          {/* Mobile Search */}
+          <form onSubmit={handleSearch} className="relative">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-pink-500 transition-all shadow-inner"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </form>
+
+          <nav className="flex flex-col gap-2">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const isSpecial = item.name === "Admin" || item.name === "Shop";
+
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center justify-between p-4 rounded-2xl transition-all ${isActive
+                    ? "bg-pink-50 text-pink-600"
+                    : isSpecial
+                      ? "bg-gray-50 text-gray-900 border border-gray-100"
+                      : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  onClick={() => setOpen(false)}
+                >
+                  <span className="text-xl font-black tracking-tight">{item.name}</span>
+                  <span className={`transition-transform duration-300 ${isActive ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}>&rarr;</span>
+                </Link>
+              );
+            })}
+          </nav>
 
           <div className="h-[1px] bg-gray-100 w-full" />
 
-          <div className="flex gap-12 text-3xl justify-center py-4">
+          {/* Quick Actions Footer */}
+          <div className="grid grid-cols-2 gap-4">
             {user ? (
-              <Link to="/profile" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition"><FiUser /></Link>
+              <Link
+                to="/profile"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center gap-3 py-4 bg-gray-900 text-white rounded-2xl font-black text-sm shadow-lg shadow-gray-200"
+              >
+                <FiUser size={18} /> Account
+              </Link>
             ) : (
-              <Link to="/login" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition"><FiUser /></Link>
+              <Link
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center gap-3 py-4 bg-gray-900 text-white rounded-2xl font-black text-sm shadow-lg shadow-gray-200"
+              >
+                <FiUser size={18} /> Sign In
+              </Link>
             )}
-            <Link to="/cart" onClick={() => setOpen(false)} className="text-gray-900 hover:text-pink-500 transition relative">
-              <FiShoppingCart />
+            <Link
+              to="/cart"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-3 py-4 bg-pink-500 text-white rounded-2xl font-black text-sm shadow-lg shadow-pink-100 relative"
+            >
+              <FiShoppingCart size={18} /> Cart
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+                <span className="absolute -top-1 -right-1 bg-white text-pink-500 text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-black">
                   {cartCount}
                 </span>
               )}
             </Link>
           </div>
-        </nav>
+
+          {user && (
+            <button
+              onClick={() => {
+                signOut();
+                setOpen(false);
+                navigate("/");
+              }}
+              className="w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+            >
+              <FiLogOut /> Sign Out
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

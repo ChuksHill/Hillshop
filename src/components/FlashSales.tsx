@@ -11,6 +11,8 @@ interface Product {
     price_id?: string;
     discount_price: number | null;
     image_url: string | null;
+    stock_status?: string;
+    quantity?: number;
 }
 
 export default function FlashSales() {
@@ -97,6 +99,8 @@ export default function FlashSales() {
                                         priceId={prod.price_id}
                                         discountPrice={prod.discount_price || undefined}
                                         images={imagesToShow}
+                                        stockStatus={prod.stock_status}
+                                        quantity={prod.quantity}
                                     />
                                     {/* Stock Bar Mock */}
                                     <div className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">

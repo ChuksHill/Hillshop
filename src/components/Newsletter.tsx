@@ -1,10 +1,40 @@
-import { FiSend } from "react-icons/fi";
+import { useState } from "react";
+import { FiSend, FiLoader } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Newsletter() {
-    const handleSubscribe = (e: React.FormEvent) => {
+    const [email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleSubscribe = async (e: React.FormEvent) => {
         e.preventDefault();
-        toast.success("Thank you for subscribing!");
+        if (!email) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from("newsletter_subscriptions")
+                .insert([{ email }]);
+
+            if (error) {
+                console.error("Supabase Insert Error:", error);
+                if (error.code === "23505") {
+                    toast.error("You're already subscribed!");
+                } else {
+                    toast.error(`Subscription failed: ${error.message}`);
+                }
+            } else {
+                console.log("Subscription successful!");
+                toast.success("Thank you for subscribing!");
+                setEmail("");
+            }
+        } catch (error: any) {
+            console.error("Subscription error:", error);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -28,15 +58,25 @@ export default function Newsletter() {
                         <input
                             type="email"
                             required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email address"
                             className="bg-transparent border-none flex-1 px-4 py-3 text-white placeholder:text-gray-500 outline-none"
+                            disabled={loading}
                         />
                         <button
                             type="submit"
-                            className="bg-pink-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-pink-600 transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-pink-500/20"
+                            disabled={loading}
+                            className="bg-pink-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-pink-600 transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Subscribe
-                            <FiSend />
+                            {loading ? (
+                                <FiLoader className="animate-spin" />
+                            ) : (
+                                <>
+                                    Subscribe
+                                    <FiSend />
+                                </>
+                            )}
                         </button>
                     </div>
                     <p className="text-[10px] text-gray-500 mt-4 text-center md:text-left tracking-wider uppercase font-bold">

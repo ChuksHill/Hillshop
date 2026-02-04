@@ -12,6 +12,8 @@ interface Product {
   discount_price: number | null;
   category_id: string;
   image_url: string | null;
+  stock_status?: string;
+  quantity?: number;
 }
 
 interface ProductImage {
@@ -94,7 +96,8 @@ export default function CategorySection() {
                     priceId={prod.price_id}
                     discountPrice={prod.discount_price || undefined}
                     images={imagesToShow}
-
+                    stockStatus={prod.stock_status}
+                    quantity={prod.quantity}
                   />
                 );
               })}

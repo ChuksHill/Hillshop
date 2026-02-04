@@ -13,6 +13,8 @@ interface ProductCardProps {
   priceId?: string;
   discountPrice?: number;
   images: string[];
+  stockStatus?: string;
+  quantity?: number;
 }
 
 export default function ProductCard({
@@ -22,11 +24,15 @@ export default function ProductCard({
   priceId,
   discountPrice,
   images,
+  stockStatus,
+  quantity,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
+
+  const isOutOfStock = stockStatus === 'out_of_stock' || (quantity !== undefined && quantity <= 0);
 
   // Fetch reviews
   useEffect(() => {
@@ -78,6 +84,12 @@ export default function ProductCard({
             </div>
           )}
 
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center text-red-600 font-bold text-sm tracking-wider uppercase border-2 border-red-500 m-4 rounded-lg">
+              Out of Stock
+            </div>
+          )}
+
           {/* Wishlist */}
           <button
             onClick={(e) => {
@@ -108,8 +120,8 @@ export default function ProductCard({
                 <svg
                   key={i}
                   className={`w-3 h-3 ${i < Math.round(averageRating)
-                      ? "fill-current"
-                      : "fill-gray-200"
+                    ? "fill-current"
+                    : "fill-gray-200"
                     }`}
                   viewBox="0 0 20 20"
                 >
@@ -141,9 +153,13 @@ export default function ProductCard({
 
       <button
         onClick={handleAddToCart}
-        className="mt-auto w-full bg-gray-900 text-white py-3 rounded-xl hover:bg-black transition-all active:scale-[0.97] font-bold text-sm"
+        disabled={isOutOfStock}
+        className={`mt-auto w-full py-3 rounded-xl transition-all active:scale-[0.97] font-bold text-sm ${isOutOfStock
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'bg-gray-900 text-white hover:bg-black'
+          }`}
       >
-        Add to Cart
+        {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-import { FiPackage, FiLogOut, FiUser } from "react-icons/fi";
+import { FiPackage, FiLogOut, FiUser, FiShield } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
@@ -12,7 +12,7 @@ interface Order {
 }
 
 export default function Profile() {
-    const { user, signOut } = useAuth();
+    const { user, signOut, isAdmin } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -77,6 +77,16 @@ export default function Profile() {
                             <span className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Member Since</span>
                             <span className="font-bold text-gray-900">{new Date(user.created_at || "").toLocaleDateString()}</span>
                         </div>
+                        {isAdmin && (
+                            <div className="pt-4 border-t mt-4">
+                                <Link
+                                    to="/admin"
+                                    className="flex items-center gap-2 text-pink-600 font-bold hover:text-pink-700 transition"
+                                >
+                                    <FiShield /> Admin Dashboard
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -15,7 +15,8 @@ interface Product {
     price_id?: string; // Stripe Price ID
     discount_price: number | null;
     image_url: string | null;
-    stock: number;
+    stock_status?: string;
+    quantity?: number;
 }
 
 interface Review {
@@ -99,8 +100,16 @@ export default function Product() {
     const handleAddToCart = () => {
         if (!product) return;
 
-        if (product.stock < quantity) {
-            toast.error(`Only ${product.stock} items left in stock`);
+        const currentQty = product.quantity !== undefined ? product.quantity : 0;
+        const isOutOfStock = product.stock_status === 'out_of_stock' || currentQty <= 0;
+
+        if (isOutOfStock) {
+            toast.error("Product is out of stock");
+            return;
+        }
+
+        if (currentQty < quantity) {
+            toast.error(`Only ${currentQty} items left in stock`);
             return;
         }
 
@@ -246,9 +255,9 @@ export default function Product() {
                             </div>
 
                             <div className="flex items-center gap-4 mb-4">
-                                {product.stock > 0 ? (
+                                {(product.stock_status !== 'out_of_stock' && (product.quantity !== undefined && product.quantity > 0)) ? (
                                     <span className="text-xs font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                                        In Stock ({product.stock} units)
+                                        In Stock ({product.quantity} units)
                                     </span>
                                 ) : (
                                     <span className="text-xs font-black text-red-600 bg-red-50 px-3 py-1 rounded-full uppercase tracking-wider">
@@ -284,10 +293,13 @@ export default function Product() {
 
                                 <button
                                     onClick={handleAddToCart}
-                                    disabled={product.stock === 0}
+                                    disabled={product.stock_status === 'out_of_stock' || (product.quantity !== undefined && product.quantity <= 0)}
                                     className="flex-1 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-black transition-all flex items-center justify-center gap-3 shadow-2xl shadow-gray-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <FiShoppingCart /> {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                                    <FiShoppingCart />
+                                    {product.stock_status === 'out_of_stock' || (product.quantity !== undefined && product.quantity <= 0)
+                                        ? "Out of Stock"
+                                        : "Add to Cart"}
                                 </button>
                             </div>
 
