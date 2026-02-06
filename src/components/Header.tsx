@@ -88,11 +88,12 @@ export default function Header() {
             })}
           </nav>
 
-          {/* Desktop Icons */}
-          <div className="hidden lg:flex items-center gap-6 text-xl relative z-10">
+          {/* Navigation/Actions Icons */}
+          <div className="flex items-center gap-4 lg:gap-6 text-xl relative z-10">
+            {/* Search - Keep desktop only in navbar, mobile has it in menu or we can add it here too */}
             <button
               onClick={() => setSearchOpen(true)}
-              className={`hover:text-pink-500 transition-colors ${textStyle}`}
+              className={`hidden lg:block hover:text-pink-500 transition-colors ${textStyle}`}
             >
               <FiSearch />
             </button>
@@ -101,12 +102,12 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-pink-50 ${textStyle}`}
+                  className={`flex items-center gap-2 px-1 py-1 rounded-full transition-all hover:bg-pink-50 ${textStyle}`}
                 >
                   <div className="w-7 h-7 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-black">
                     {user.email?.charAt(0).toUpperCase()}
                   </div>
-                  <FiChevronDown className="text-sm" />
+                  <FiChevronDown className="hidden lg:block text-sm" />
                 </button>
 
                 {userMenuOpen && (
@@ -155,23 +156,23 @@ export default function Header() {
                 <FiShoppingCart />
               </Icon>
             </Link>
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className={`lg:hidden text-2xl p-3 -mr-2 transition-all duration-300 active:scale-90 relative z-[70] ${textStyle}`}
-            onClick={() => setOpen(!open)}
-            aria-label="Toggle menu"
-          >
-            {open ? <FiX /> : <FiMenu />}
-          </button>
+            {/* Mobile Menu Button - Moved inside the same flex container for better alignment */}
+            <button
+              className={`lg:hidden text-2xl p-2 transition-all duration-300 active:scale-90 relative z-[70] ${textStyle}`}
+              onClick={() => setOpen(!open)}
+              aria-label="Toggle menu"
+            >
+              {open ? <FiX /> : <FiMenu />}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Search Overlay */}
       <div className={`absolute top-0 left-0 w-full bg-white shadow-xl border-b transition-all duration-500 origin-top overflow-hidden z-40 ${searchOpen
-          ? "scale-y-100 opacity-100 h-24 pointer-events-auto"
-          : "scale-y-0 opacity-0 h-0 pointer-events-none"
+        ? "scale-y-100 opacity-100 h-24 pointer-events-auto"
+        : "scale-y-0 opacity-0 h-0 pointer-events-none"
         }`}>
         <div className="max-w-5xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center gap-4">
           <FiSearch className="text-gray-400 text-2xl" />
@@ -241,6 +242,8 @@ export default function Header() {
           <div className="h-[1px] bg-gray-100 w-full" />
 
           {/* Quick Actions Footer */}
+          {/* Removed Sign In and Cart from mobile menu footer as they are now always visible in the main navbar */}
+          {/*
           <div className="grid grid-cols-2 gap-4">
             {user ? (
               <Link
@@ -272,6 +275,7 @@ export default function Header() {
               )}
             </Link>
           </div>
+          */}
 
           {user && (
             <button

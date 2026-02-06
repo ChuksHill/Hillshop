@@ -69,7 +69,7 @@ export default function CategorySection() {
             </h2>
           </Link>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory hide-scrollbar sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-6 sm:pb-0">
             {products
               .filter((p) => p.category_id === category.id)
               .map((prod) => {
@@ -88,17 +88,18 @@ export default function CategorySection() {
                     : ["/placeholder.png"];
 
                 return (
-                  <ProductCard
-                    key={prod.id}
-                    id={prod.id}
-                    name={prod.name}
-                    price={prod.price}
-                    priceId={prod.price_id}
-                    discountPrice={prod.discount_price || undefined}
-                    images={imagesToShow}
-                    stockStatus={prod.stock_status}
-                    quantity={prod.quantity}
-                  />
+                  <div key={prod.id} className="min-w-[120px] w-[33%] sm:w-auto flex-shrink-0 snap-start">
+                    <ProductCard
+                      id={prod.id}
+                      name={prod.name}
+                      price={prod.price}
+                      priceId={prod.price_id}
+                      discountPrice={prod.discount_price || undefined}
+                      images={imagesToShow}
+                      stockStatus={prod.stock_status}
+                      quantity={prod.quantity}
+                    />
+                  </div>
                 );
               })}
           </div>

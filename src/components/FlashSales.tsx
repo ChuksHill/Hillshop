@@ -77,7 +77,7 @@ export default function FlashSales() {
 
                 {/* Product Grid */}
                 <div className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="flex overflow-x-auto pb-4 gap-6 snap-x snap-mandatory hide-scrollbar lg:grid lg:grid-cols-4 lg:pb-0">
                         {products.map((prod) => {
                             const galleryImages = images
                                 .filter((img) => img.product_id === prod.id)
@@ -91,7 +91,7 @@ export default function FlashSales() {
                             const imagesToShow = finalImages.length > 0 ? finalImages : ["/placeholder.png"];
 
                             return (
-                                <div key={prod.id} className="relative">
+                                <div key={prod.id} className="min-w-[120px] w-[33%] lg:w-auto flex-shrink-0 snap-start">
                                     <ProductCard
                                         id={prod.id}
                                         name={prod.name}

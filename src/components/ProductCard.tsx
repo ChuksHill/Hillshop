@@ -65,7 +65,7 @@ export default function ProductCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 flex flex-col h-full group relative">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-2 sm:p-4 flex flex-col h-full group relative">
       {/* Entire card navigates to product page */}
       <Link
         to={`/product/${id}`}
@@ -90,6 +90,12 @@ export default function ProductCard({
             </div>
           )}
 
+          {!isOutOfStock && discountPrice && (
+            <div className="absolute top-2 left-2 bg-pink-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg z-10">
+              -{Math.round(((price - discountPrice) / price) * 100)}%
+            </div>
+          )}
+
           {/* Wishlist */}
           <button
             onClick={(e) => {
@@ -109,7 +115,7 @@ export default function ProductCard({
           </button>
         </div>
 
-        <h3 className="font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-pink-500 transition-colors">
+        <h3 className="font-bold text-gray-900 line-clamp-1 mb-1 group-hover:text-pink-500 transition-colors text-xs sm:text-base">
           {name}
         </h3>
 
@@ -135,16 +141,16 @@ export default function ProductCard({
           </div>
         )}
 
-        <div className="mb-4">
+        <div className="mb-2 sm:mb-4">
           {discountPrice ? (
-            <p className="text-pink-600 font-bold">
+            <p className="text-pink-600 font-bold text-sm sm:text-lg">
               ${discountPrice.toFixed(2)}
-              <span className="line-through text-gray-400 text-sm ml-2 font-normal">
+              <span className="line-through text-gray-400 text-[10px] sm:text-sm ml-1 sm:ml-2 font-normal">
                 ${price.toFixed(2)}
               </span>
             </p>
           ) : (
-            <p className="text-gray-900 font-bold">
+            <p className="text-gray-900 font-bold text-sm sm:text-lg">
               ${price.toFixed(2)}
             </p>
           )}
@@ -154,7 +160,7 @@ export default function ProductCard({
       <button
         onClick={handleAddToCart}
         disabled={isOutOfStock}
-        className={`mt-auto w-full py-3 rounded-xl transition-all active:scale-[0.97] font-bold text-sm ${isOutOfStock
+        className={`mt-auto w-full py-2 sm:py-3 rounded-xl transition-all active:scale-[0.97] font-bold text-[10px] sm:text-sm ${isOutOfStock
           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
           : 'bg-gray-900 text-white hover:bg-black'
           }`}

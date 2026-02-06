@@ -41,6 +41,8 @@ export default function Product() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
     const [submittingReview, setSubmittingReview] = useState(false);
+    const [hasPurchased, setHasPurchased] = useState(false);
+    const [hasReviewed, setHasReviewed] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -95,7 +97,40 @@ export default function Product() {
         }
 
         fetchProduct();
-    }, [id]);
+    }, [id, user]);
+
+    useEffect(() => {
+        if (!id || !user) {
+            setHasPurchased(false);
+            setHasReviewed(false);
+            return;
+        }
+
+        async function checkStatus() {
+            if (!user) return;
+
+            // Check if user has purchased
+            // In Supabase, we filter on joined tables using the following syntax:
+            const { data: orderData } = await supabase
+                .from("order_items")
+                .select("id, orders!inner(user_id)")
+                .eq("product_id", id)
+                .eq("orders.user_id", user.id);
+
+            setHasPurchased(orderData ? orderData.length > 0 : false);
+
+            // Check if user has already reviewed
+            const { data: userReviewData } = await supabase
+                .from("reviews")
+                .select("id")
+                .eq("product_id", id)
+                .eq("user_id", user.id);
+
+            setHasReviewed(userReviewData ? userReviewData.length > 0 : false);
+        }
+
+        checkStatus();
+    }, [id, user]);
 
     const handleAddToCart = () => {
         if (!product) return;
@@ -156,6 +191,7 @@ export default function Product() {
         } else {
             toast.success("Review submitted successfully!");
             setNewReview({ rating: 5, comment: "" });
+            setHasReviewed(true);
             // Refresh reviews
             const { data } = await supabase
                 .from("reviews")
@@ -344,55 +380,70 @@ export default function Product() {
 
                     {/* Write a Review Form */}
                     {user ? (
-                        <form onSubmit={handleSubmitReview} className="mb-12 bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                            <h3 className="text-xl font-black text-gray-900 mb-6">Write a Review</h3>
+                        !hasPurchased ? (
+                            <div className="mb-12 bg-pink-50 rounded-3xl p-8 border border-pink-100 text-center">
+                                <p className="text-pink-600 font-medium">
+                                    Only <span className="font-black underline">Verified Buyers</span> can leave a review.
+                                    Purchase this product to share your experience!
+                                </p>
+                            </div>
+                        ) : hasReviewed ? (
+                            <div className="mb-12 bg-gray-50 rounded-3xl p-8 border border-gray-100 text-center">
+                                <p className="text-gray-600 font-medium">
+                                    You have already shared your review for this product. Thank you!
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmitReview} className="mb-12 bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                                <h3 className="text-xl font-black text-gray-900 mb-6">Write a Review</h3>
 
-                            {/* Star Rating Selector */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-bold text-gray-700 mb-3">Your Rating</label>
-                                <div className="flex gap-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button
-                                            key={star}
-                                            type="button"
-                                            onClick={() => setNewReview({ ...newReview, rating: star })}
-                                            className="transition-transform hover:scale-110"
-                                        >
-                                            <svg
-                                                className={`w-8 h-8 ${star <= newReview.rating
-                                                    ? "fill-yellow-400 text-yellow-400"
-                                                    : "fill-gray-200 text-gray-200"
-                                                    }`}
-                                                viewBox="0 0 20 20"
+                                {/* Star Rating Selector */}
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 mb-3">Your Rating</label>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setNewReview({ ...newReview, rating: star })}
+                                                className="transition-transform hover:scale-110"
                                             >
-                                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                            </svg>
-                                        </button>
-                                    ))}
+                                                <svg
+                                                    className={`w-8 h-8 ${star <= newReview.rating
+                                                        ? "fill-yellow-400 text-yellow-400"
+                                                        : "fill-gray-200 text-gray-200"
+                                                        }`}
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                                </svg>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Comment Textarea */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-bold text-gray-700 mb-3">Your Review</label>
-                                <textarea
-                                    value={newReview.comment}
-                                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                                    required
-                                    rows={4}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none resize-none"
-                                    placeholder="Share your thoughts about this product..."
-                                />
-                            </div>
+                                {/* Comment Textarea */}
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 mb-3">Your Review</label>
+                                    <textarea
+                                        value={newReview.comment}
+                                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                        required
+                                        rows={4}
+                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none resize-none"
+                                        placeholder="Share your thoughts about this product..."
+                                    />
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={submittingReview}
-                                className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {submittingReview ? "Submitting..." : "Submit Review"}
-                            </button>
-                        </form>
+                                <button
+                                    type="submit"
+                                    disabled={submittingReview}
+                                    className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {submittingReview ? "Submitting..." : "Submit Review"}
+                                </button>
+                            </form>
+                        )
                     ) : (
                         <div className="mb-12 bg-gray-50 rounded-3xl p-8 border border-dashed border-gray-200 text-center">
                             <p className="text-gray-600 font-medium">
