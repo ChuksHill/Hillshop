@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import banner1 from "../assets/images/Banner/banner-1.jpg";
-import banner2 from "../assets/images/Banner/banner-2.jpg";
-import banner3 from "../assets/images/Banner/banner-3.jpg";
+import banner1 from "https://jjsfxcmoheebjbqjglhc.supabase.co/storage/v1/object/public/products/Banner%201.jpg";
+import banner2 from "https://jjsfxcmoheebjbqjglhc.supabase.co/storage/v1/object/public/products/Banner%202.jpg";
+import banner3 from "https://jjsfxcmoheebjbqjglhc.supabase.co/storage/v1/object/public/products/Banner%203.jpg";
 
 const images = [banner1, banner2, banner3];
 
@@ -34,7 +34,7 @@ export default function Banner() {
       <div className="relative z-10 max-w-5xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center">
         <div className="text-center md:text-left max-w-xl text-white">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-            Welcome to Hillshop
+            Welcome to Hills shop
           </h1>
 
           <p className="mb-6 text-base sm:text-lg leading-relaxed">
