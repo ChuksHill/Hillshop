@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { FiGrid, FiBox, FiShoppingBag, FiLogOut, FiHome, FiUsers } from "react-icons/fi";
+import { FiGrid, FiBox, FiShoppingBag, FiLogOut, FiHome, FiUsers, FiUpload } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import ScrollToTopButton from "./ScrollToTopButton";
 
@@ -53,6 +53,16 @@ export default function AdminLayout() {
                     >
                         <FiUsers size={20} /> Subscribers
                     </Link>
+                    <Link
+                        to="/admin/banners"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive("/admin/banners")
+                            ? "bg-pink-50 text-pink-600"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            }`}
+                    >
+                        <FiUpload size={20} /> Banners
+                    </Link>
+
                     {/* Placeholder for future orders page */}
                     <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 cursor-not-allowed">
                         <FiShoppingBag size={20} /> Orders (Soon)

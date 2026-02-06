@@ -14,6 +14,7 @@ import AdminLayout from './components/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminSubscribers from './pages/admin/AdminSubscribers'
+import BannerForm from './components/admin/BannerForm'
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="subscribers" element={<AdminSubscribers />} />
+          <Route path="/admin/banners" element={<BannerForm />} />
+
         </Route>
       </Route>
 
