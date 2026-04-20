@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
-import { savePendingPaystackOrder } from "../lib/paystackCheckout";
 import { formatNaira } from "../lib/currency";
 import {
     FiChevronLeft,
@@ -25,7 +24,6 @@ export default function Checkout() {
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("shipping");
 
-    // Form States
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -34,18 +32,16 @@ export default function Checkout() {
         postalCode: "",
         deliveryMethod: "standard",
         paymentMethod: "card",
-        cardName: "",
-        cardNumber: "",
-        expiry: "",
-        cvc: ""
     });
-    const paystackFunctionName = import.meta.env.VITE_PAYSTACK_FUNCTION_NAME || "initialize-paystack-payment";
 
+    const paystackFunctionName = import.meta.env.VITE_PAYSTACK_FUNCTION_NAME || "initialize-paystack-payment";
     const shippingFee = formData.deliveryMethod === "express" ? 15.00 : 0.00;
     const finalTotal = cartTotal + shippingFee;
     const customerEmail = user?.email?.trim() || formData.email.trim();
-    const paystackChargeAmount = finalTotal;
-    const paystackChargeLabel = formatNaira(paystackChargeAmount);
+
+    useEffect(() => {
+        if (items.length === 0) navigate("/cart");
+    }, [items, navigate]);
 
     useEffect(() => {
         if (user?.email && !formData.email) {
@@ -59,43 +55,29 @@ export default function Checkout() {
     };
 
     const nextStep = (next: Step) => {
-        // Simple validation before moving
         if (currentStep === "shipping") {
             if (!formData.fullName || !customerEmail || !formData.address) {
                 toast.error("Please fill in all shipping details");
                 return;
             }
         }
-
-        // REMOVED BLOCKING CHECK: We now allow items without price_id to proceed to payment selection.
-        // This is to support COD/PayPal which may not require Stripe price IDs.
-
         setCurrentStep(next);
         window.scrollTo(0, 0);
     };
 
     const processOrder = async (method: string) => {
         setLoading(true);
-
         try {
-            // Ensure user profile exists
             const userPayload = { id: user!.id, email: user!.email };
-
-            // Update 'profiles' table
             const { error: profilesError } = await supabase.from('profiles').upsert(userPayload, { onConflict: 'id' });
+            if (profilesError) console.error("Failed to upsert to 'profiles' table:", profilesError);
 
-            if (profilesError) {
-                console.error("Failed to upsert to 'profiles' table:", profilesError);
-            }
-
-            // Prepare items for RPC
             const orderItems = items.map(item => ({
                 product_id: item.id,
                 quantity: item.quantity,
                 price_id: item.price_id
             }));
 
-            // Call the secure atomic RPC function
             const { data, error: rpcError } = await supabase.rpc('handle_place_order', {
                 p_full_name: formData.fullName,
                 p_email: customerEmail,
@@ -108,12 +90,8 @@ export default function Checkout() {
             });
 
             if (rpcError) throw rpcError;
+            if (data && data.success === false) throw new Error(data.error || "Failed to place order");
 
-            if (data && data.success === false) {
-                throw new Error(data.error || "Failed to place order");
-            }
-
-            // Fire confirmation email (non-blocking)
             const orderId = data?.order_id || data?.id || "unknown";
             supabase.functions.invoke("send-order-email", {
                 body: {
@@ -134,14 +112,13 @@ export default function Checkout() {
                 if (emailError) console.warn("Email notification failed (non-critical):", emailError);
             });
 
-            // Success!
             clearCart();
             toast.success("Order placed successfully!");
             navigate("/order-success");
         } catch (error: any) {
             console.error("Error placing order:", error);
             toast.error(error.message || "Failed to place order. Please try again.");
-            setLoading(false); // Stop loading since error occurred
+            setLoading(false);
         }
     };
 
@@ -156,63 +133,40 @@ export default function Checkout() {
 
         if (formData.paymentMethod === "card") {
             setLoading(true);
-
             try {
-                savePendingPaystackOrder({
-                    formData: {
-                        ...formData,
-                        email: customerEmail,
-                    },
-                    items,
-                    finalTotal,
-                    paystackChargeAmount,
-                });
-
                 const callbackUrl = `${window.location.origin}/order-success`;
                 const { data, error } = await supabase.functions.invoke(paystackFunctionName, {
                     body: {
                         email: customerEmail,
-                        amount: paystackChargeAmount,
+                        amount: finalTotal,
                         callback_url: callbackUrl,
                     },
                 });
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
 
                 const authorizationUrl = data?.data?.authorization_url;
-
                 if (!authorizationUrl) {
                     throw new Error(data?.error || "Paystack did not return an authorization URL.");
                 }
 
                 window.location.assign(authorizationUrl);
-                return;
             } catch (error: any) {
                 console.error("Error initializing Paystack payment:", error);
                 toast.error(error.message || "Failed to initialize payment. Please try again.");
                 setLoading(false);
-                return;
             }
         } else {
-            // For COD or PayPal
             processOrder(formData.paymentMethod);
         }
     };
 
-
-
-    if (items.length === 0) {
-        useEffect(() => { navigate("/cart"); }, []);
-        return null;
-    }
+    if (items.length === 0) return null;
 
     return (
         <div className="min-h-screen bg-gray-50 pt-28 pb-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                {/* Header/Back Link */}
                 <div className="mb-8">
                     <button
                         onClick={() => navigate("/cart")}
@@ -224,8 +178,6 @@ export default function Checkout() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-
-                    {/* Main Flow */}
                     <div className="lg:col-span-8 space-y-6">
 
                         {/* Step 1: Shipping */}
@@ -355,7 +307,6 @@ export default function Checkout() {
 
                                 {currentStep === "payment" && (
                                     <form onSubmit={handleSubmit} className="space-y-6">
-                                        {/* Payment Selector */}
                                         <div className="grid grid-cols-3 gap-4">
                                             {[
                                                 { id: 'card', name: 'Card', icon: <FiCreditCard /> },
@@ -378,7 +329,7 @@ export default function Checkout() {
                                                 <div className="text-4xl italic font-black text-pink-500">Paystack</div>
                                                 <p className="text-sm text-pink-600 font-medium">Safe and secure payments using Paystack.</p>
                                                 <p className="text-xs text-pink-500 font-bold uppercase tracking-wide">
-                                                    {`You will be charged ${paystackChargeLabel}.`}
+                                                    You will be charged {formatNaira(finalTotal)}.
                                                 </p>
                                             </div>
                                         )}
@@ -398,6 +349,7 @@ export default function Checkout() {
                                         )}
 
                                         <button
+                                            type="submit"
                                             disabled={loading}
                                             className="w-full bg-pink-500 text-white py-5 rounded-2xl font-black text-xl hover:bg-pink-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-pink-100 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                                         >
@@ -407,7 +359,7 @@ export default function Checkout() {
                                                     Processing...
                                                 </div>
                                             ) : (
-                                                <>{formData.paymentMethod === "card" ? `Pay ${paystackChargeLabel}` : `Secure Pay ${formatNaira(finalTotal)}`}</>
+                                                <>{formData.paymentMethod === "card" ? `Pay ${formatNaira(finalTotal)}` : `Secure Pay ${formatNaira(finalTotal)}`}</>
                                             )}
                                         </button>
 
@@ -422,14 +374,13 @@ export default function Checkout() {
                         </div>
                     </div>
 
-                    {/* Order Summary Column */}
+                    {/* Order Summary */}
                     <div className="lg:col-span-4 sticky top-24">
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                                 <h2 className="text-lg font-black text-gray-900">Order Summary</h2>
                                 <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">{items.length} Items</span>
                             </div>
-
                             <div className="p-6 max-h-[400px] overflow-y-auto scrollbar-hide space-y-6">
                                 {items.map(item => (
                                     <div key={item.id} className="flex gap-4">
@@ -444,7 +395,6 @@ export default function Checkout() {
                                     </div>
                                 ))}
                             </div>
-
                             <div className="p-6 bg-gray-50/50 space-y-3">
                                 <div className="flex justify-between text-sm text-gray-500">
                                     <span>Subtotal</span>
@@ -466,7 +416,6 @@ export default function Checkout() {
                                     </div>
                                 </div>
                             </div>
-
                             <div className="p-4 bg-pink-50/50 flex flex-col gap-3">
                                 <div className="flex items-center gap-3 text-pink-600">
                                     <FiShield className="shrink-0" />
@@ -479,7 +428,6 @@ export default function Checkout() {
                             </div>
                         </div>
 
-                        {/* Promo Code Mock */}
                         <div className="mt-6 p-4 border-2 border-dashed border-gray-200 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-pink-300 transition-all">
                             <span className="text-gray-400 font-bold text-sm group-hover:text-pink-500">Have a promo code?</span>
                             <FiChevronRight className="text-gray-300 group-hover:text-pink-500" />
