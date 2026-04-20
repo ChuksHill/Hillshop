@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiFilter, FiList, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import toast from "react-hot-toast";
 import ProductForm from "../../components/admin/ProductForm";
+import { formatNaira } from "../../lib/currency";
 
 interface Product {
     id: string;
@@ -294,7 +295,7 @@ export default function AdminProducts() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-900">
-                                            ${product.price ? product.price.toFixed(2) : "0.00"}
+                                            {formatNaira(product.price || 0)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded text-xs font-medium ${product.stock_status === 'out_of_stock' || (product.quantity !== undefined && product.quantity <= 0)

@@ -1,11 +1,12 @@
 import { FiTruck, FiShield, FiRotateCcw, FiAward } from "react-icons/fi";
+import { formatNaira } from "../lib/currency";
 
 export default function FeaturesBar() {
     const features = [
         {
             icon: <FiTruck className="text-pink-500" size={24} />,
             title: "Free Delivery",
-            desc: "On all orders over $50",
+            desc: `On all orders over ${formatNaira(50)}`,
         },
         {
             icon: <FiShield className="text-pink-500" size={24} />,

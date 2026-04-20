@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight } from "react-icons/fi";
+import { formatNaira } from "../lib/currency";
 
 const Cart = () => {
     const { items, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -54,7 +55,7 @@ const Cart = () => {
                                             <FiTrash2 size={20} />
                                         </button>
                                     </div>
-                                    <p className="text-pink-600 font-black text-lg">${item.price.toFixed(2)}</p>
+                                    <p className="text-pink-600 font-black text-lg">{formatNaira(item.price)}</p>
                                 </div>
 
                                 <div className="flex items-center justify-between mt-6">
@@ -76,7 +77,7 @@ const Cart = () => {
 
                                     <div className="text-right">
                                         <span className="text-xs text-gray-400 uppercase font-black tracking-widest block mb-1">Subtotal</span>
-                                        <span className="font-black text-gray-900 text-lg">${(item.price * item.quantity).toFixed(2)}</span>
+                                        <span className="font-black text-gray-900 text-lg">{formatNaira(item.price * item.quantity)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -101,7 +102,7 @@ const Cart = () => {
                         <div className="space-y-5 text-sm mb-8">
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
-                                <span className="font-black text-gray-900 text-lg">${cartTotal.toFixed(2)}</span>
+                                <span className="font-black text-gray-900 text-lg">{formatNaira(cartTotal)}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Shipping</span>
@@ -109,7 +110,7 @@ const Cart = () => {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Tax Estimate</span>
-                                <span className="font-black text-gray-900">$0.00</span>
+                                <span className="font-black text-gray-900">{formatNaira(0)}</span>
                             </div>
                         </div>
 
@@ -118,7 +119,7 @@ const Cart = () => {
                         <div className="flex justify-between items-end mb-10">
                             <div>
                                 <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Grand Total</span>
-                                <p className="text-3xl font-black text-gray-900 tracking-tighter">${cartTotal.toFixed(2)}</p>
+                                <p className="text-3xl font-black text-gray-900 tracking-tighter">{formatNaira(cartTotal)}</p>
                             </div>
                         </div>
 

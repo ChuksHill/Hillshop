@@ -6,6 +6,7 @@ import { useWishlist } from "../context/WishlistContext";
 import { useAuth } from "../context/AuthContext";
 import { FiArrowLeft, FiShoppingCart, FiMinus, FiPlus, FiHeart, FiShield, FiTruck, FiRefreshCw } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { formatNaira } from "../lib/currency";
 
 interface Product {
     id: string;
@@ -282,11 +283,11 @@ export default function Product() {
                             <div className="flex items-center gap-6 mb-4">
                                 {product.discount_price ? (
                                     <>
-                                        <span className="text-4xl font-black text-pink-600">${product.discount_price.toFixed(2)}</span>
-                                        <span className="text-2xl text-gray-300 line-through decoration-pink-300 decoration-2">${product.price.toFixed(2)}</span>
+                                        <span className="text-4xl font-black text-pink-600">{formatNaira(product.discount_price)}</span>
+                                        <span className="text-2xl text-gray-300 line-through decoration-pink-300 decoration-2">{formatNaira(product.price)}</span>
                                     </>
                                 ) : (
-                                    <span className="text-4xl font-black text-gray-900">${product.price.toFixed(2)}</span>
+                                    <span className="text-4xl font-black text-gray-900">{formatNaira(product.price)}</span>
                                 )}
                             </div>
 

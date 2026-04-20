@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { formatNaira } from "../lib/currency";
 
 interface ProductCardProps {
   id: string;
@@ -144,14 +145,14 @@ export default function ProductCard({
         <div className="mb-2 sm:mb-4">
           {discountPrice ? (
             <p className="text-pink-600 font-bold text-sm sm:text-lg">
-              ${discountPrice.toFixed(2)}
+              {formatNaira(discountPrice)}
               <span className="line-through text-gray-400 text-[10px] sm:text-sm ml-1 sm:ml-2 font-normal">
-                ${price.toFixed(2)}
+                {formatNaira(price)}
               </span>
             </p>
           ) : (
             <p className="text-gray-900 font-bold text-sm sm:text-lg">
-              ${price.toFixed(2)}
+              {formatNaira(price)}
             </p>
           )}
         </div>

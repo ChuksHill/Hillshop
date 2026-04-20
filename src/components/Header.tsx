@@ -9,9 +9,11 @@ import {
   FiShoppingCart,
   FiChevronDown,
   FiLogOut,
+  FiHeart,
 } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -20,6 +22,7 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { cartCount } = useCart();
   const { user, signOut, isAdmin } = useAuth();
+  const { wishlistItems } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -150,6 +153,12 @@ export default function Header() {
                 <Icon><FiUser /></Icon>
               </Link>
             )}
+
+            <Link to="/wishlist" className={`relative transition-colors duration-300 ${textStyle} hover:text-pink-500 hidden lg:block`}>
+              <Icon count={wishlistItems.length}>
+                <FiHeart />
+              </Icon>
+            </Link>
 
             <Link to="/cart" className={`relative transition-colors duration-300 ${textStyle} hover:text-pink-500`}>
               <Icon count={cartCount}>

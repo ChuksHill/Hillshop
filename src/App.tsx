@@ -8,6 +8,7 @@ import Checkout from './pages/Checkout'
 import OrderSuccess from './pages/OrderSuccess'
 import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
+import Wishlist from './pages/Wishlist'
 import Layout from './components/Layout'
 import AdminRoute from './components/AdminRoute'
 import AdminLayout from './components/AdminLayout'
@@ -27,6 +28,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/wishlist" element={<Wishlist />} />
       </Route>
 
       {/* Admin Routes */}

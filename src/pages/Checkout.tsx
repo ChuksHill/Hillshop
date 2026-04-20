@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { savePendingPaystackOrder } from "../lib/paystackCheckout";
+import { formatNaira } from "../lib/currency";
 import {
     FiChevronLeft,
     FiMapPin,
     FiTruck,
     FiCreditCard,
-    FiLock,
     FiShield,
     FiCheckCircle,
     FiChevronRight
@@ -38,9 +39,19 @@ export default function Checkout() {
         expiry: "",
         cvc: ""
     });
+    const paystackFunctionName = import.meta.env.VITE_PAYSTACK_FUNCTION_NAME || "initialize-paystack-payment";
 
     const shippingFee = formData.deliveryMethod === "express" ? 15.00 : 0.00;
     const finalTotal = cartTotal + shippingFee;
+    const customerEmail = user?.email?.trim() || formData.email.trim();
+    const paystackChargeAmount = finalTotal;
+    const paystackChargeLabel = formatNaira(paystackChargeAmount);
+
+    useEffect(() => {
+        if (user?.email && !formData.email) {
+            setFormData(prev => ({ ...prev, email: user.email ?? "" }));
+        }
+    }, [formData.email, user?.email]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -50,7 +61,7 @@ export default function Checkout() {
     const nextStep = (next: Step) => {
         // Simple validation before moving
         if (currentStep === "shipping") {
-            if (!formData.fullName || !formData.email || !formData.address) {
+            if (!formData.fullName || !customerEmail || !formData.address) {
                 toast.error("Please fill in all shipping details");
                 return;
             }
@@ -63,29 +74,18 @@ export default function Checkout() {
         window.scrollTo(0, 0);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!user) {
-            toast.error("Please log in to complete your order");
-            navigate("/login");
-            return;
-        }
-
-        // Mock Mode: Pass through validation (logic removed)
-
+    const processOrder = async (method: string) => {
         setLoading(true);
 
         try {
             // Ensure user profile exists
-            const userPayload = { id: user.id, email: user.email };
+            const userPayload = { id: user!.id, email: user!.email };
 
             // Update 'profiles' table
             const { error: profilesError } = await supabase.from('profiles').upsert(userPayload, { onConflict: 'id' });
 
             if (profilesError) {
                 console.error("Failed to upsert to 'profiles' table:", profilesError);
-                // We continue even if profile update fails, as the order might still succeed
             }
 
             // Prepare items for RPC
@@ -98,12 +98,12 @@ export default function Checkout() {
             // Call the secure atomic RPC function
             const { data, error: rpcError } = await supabase.rpc('handle_place_order', {
                 p_full_name: formData.fullName,
-                p_email: formData.email,
+                p_email: customerEmail,
                 p_address: formData.address,
                 p_city: formData.city,
                 p_postal_code: formData.postalCode,
                 p_delivery_method: formData.deliveryMethod,
-                p_payment_method: formData.paymentMethod,
+                p_payment_method: method,
                 p_items: orderItems
             });
 
@@ -113,6 +113,27 @@ export default function Checkout() {
                 throw new Error(data.error || "Failed to place order");
             }
 
+            // Fire confirmation email (non-blocking)
+            const orderId = data?.order_id || data?.id || "unknown";
+            supabase.functions.invoke("send-order-email", {
+                body: {
+                    to: customerEmail,
+                    customer_name: formData.fullName,
+                    order_id: orderId,
+                    items: items.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    total: finalTotal,
+                    delivery_method: formData.deliveryMethod,
+                    address: formData.address,
+                    city: formData.city,
+                },
+            }).then(({ error: emailError }) => {
+                if (emailError) console.warn("Email notification failed (non-critical):", emailError);
+            });
+
             // Success!
             clearCart();
             toast.success("Order placed successfully!");
@@ -120,8 +141,63 @@ export default function Checkout() {
         } catch (error: any) {
             console.error("Error placing order:", error);
             toast.error(error.message || "Failed to place order. Please try again.");
-        } finally {
-            setLoading(false);
+            setLoading(false); // Stop loading since error occurred
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!user) {
+            toast.error("Please log in to complete your order");
+            navigate("/login");
+            return;
+        }
+
+        if (formData.paymentMethod === "card") {
+            setLoading(true);
+
+            try {
+                savePendingPaystackOrder({
+                    formData: {
+                        ...formData,
+                        email: customerEmail,
+                    },
+                    items,
+                    finalTotal,
+                    paystackChargeAmount,
+                });
+
+                const callbackUrl = `${window.location.origin}/order-success`;
+                const { data, error } = await supabase.functions.invoke(paystackFunctionName, {
+                    body: {
+                        email: customerEmail,
+                        amount: paystackChargeAmount,
+                        callback_url: callbackUrl,
+                    },
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                const authorizationUrl = data?.data?.authorization_url;
+
+                if (!authorizationUrl) {
+                    throw new Error(data?.error || "Paystack did not return an authorization URL.");
+                }
+
+                window.location.assign(authorizationUrl);
+                return;
+            } catch (error: any) {
+                console.error("Error initializing Paystack payment:", error);
+                toast.error(error.message || "Failed to initialize payment. Please try again.");
+                setLoading(false);
+                return;
+            }
+        } else {
+            // For COD or PayPal
+            processOrder(formData.paymentMethod);
         }
     };
 
@@ -249,7 +325,7 @@ export default function Checkout() {
                                                     <p className="text-xs text-gray-500">Delivered within 1-2 business days</p>
                                                 </div>
                                             </div>
-                                            <p className="font-black text-gray-900">$15.00</p>
+                                            <p className="font-black text-gray-900">{formatNaira(shippingFee)}</p>
                                         </div>
                                         <div className="pt-4">
                                             <button
@@ -298,61 +374,12 @@ export default function Checkout() {
                                         </div>
 
                                         {formData.paymentMethod === 'card' && (
-                                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <div>
-                                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Cardholder Name</label>
-                                                    <input name="cardName" value={formData.cardName} onChange={handleInputChange} required type="text" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none" placeholder="FULL NAME" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Card Number</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            name="cardNumber"
-                                                            value={formData.cardNumber}
-                                                            onChange={handleInputChange}
-                                                            required
-                                                            type="text"
-                                                            inputMode="numeric"
-                                                            pattern="[0-9]*"
-                                                            maxLength={16}
-                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
-                                                            placeholder="0000 0000 0000 0000"
-                                                        />
-                                                        <FiLock className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300" />
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Expiry</label>
-                                                        <input
-                                                            name="expiry"
-                                                            value={formData.expiry}
-                                                            onChange={handleInputChange}
-                                                            required
-                                                            type="text"
-                                                            inputMode="numeric"
-                                                            pattern="[0-9/]*"
-                                                            maxLength={5}
-                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
-                                                            placeholder="MM/YY"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">CVC</label>
-                                                        <input
-                                                            name="cvc"
-                                                            value={formData.cvc}
-                                                            onChange={handleInputChange}
-                                                            required
-                                                            type="text"
-                                                            inputMode="numeric"
-                                                            pattern="[0-9]*"
-                                                            maxLength={3}
-                                                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none"
-                                                            placeholder="123"
-                                                        />
-                                                    </div>
-                                                </div>
+                                            <div className="p-8 bg-pink-50 rounded-3xl text-center space-y-4 animate-in fade-in duration-300">
+                                                <div className="text-4xl italic font-black text-pink-500">Paystack</div>
+                                                <p className="text-sm text-pink-600 font-medium">Safe and secure payments using Paystack.</p>
+                                                <p className="text-xs text-pink-500 font-bold uppercase tracking-wide">
+                                                    {`You will be charged ${paystackChargeLabel}.`}
+                                                </p>
                                             </div>
                                         )}
 
@@ -380,7 +407,7 @@ export default function Checkout() {
                                                     Processing...
                                                 </div>
                                             ) : (
-                                                <>Secure Pay ${finalTotal.toFixed(2)}</>
+                                                <>{formData.paymentMethod === "card" ? `Pay ${paystackChargeLabel}` : `Secure Pay ${formatNaira(finalTotal)}`}</>
                                             )}
                                         </button>
 
@@ -412,7 +439,7 @@ export default function Checkout() {
                                         <div className="flex-1">
                                             <p className="text-sm font-bold text-gray-900 line-clamp-1">{item.name}</p>
                                             <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                                            <p className="text-sm font-black text-pink-500 mt-1">${(item.price * item.quantity).toFixed(2)}</p>
+                                            <p className="text-sm font-black text-pink-500 mt-1">{formatNaira(item.price * item.quantity)}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -421,20 +448,20 @@ export default function Checkout() {
                             <div className="p-6 bg-gray-50/50 space-y-3">
                                 <div className="flex justify-between text-sm text-gray-500">
                                     <span>Subtotal</span>
-                                    <span className="font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-gray-900">{formatNaira(cartTotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-500">
                                     <span>Shipping</span>
-                                    <span className="font-bold text-gray-900">{shippingFee === 0 ? "FREE" : `$${shippingFee.toFixed(2)}`}</span>
+                                    <span className="font-bold text-gray-900">{shippingFee === 0 ? "FREE" : formatNaira(shippingFee)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-500">
                                     <span>Taxes</span>
-                                    <span className="font-bold text-gray-900">$0.00</span>
+                                    <span className="font-bold text-gray-900">{formatNaira(0)}</span>
                                 </div>
                                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                                     <span className="font-black text-gray-900 text-lg">Total</span>
                                     <div className="text-right">
-                                        <p className="text-2xl font-black text-pink-600 leading-none">${finalTotal.toFixed(2)}</p>
+                                        <p className="text-2xl font-black text-pink-600 leading-none">{formatNaira(finalTotal)}</p>
                                         <p className="text-[10px] text-gray-400 uppercase tracking-tighter mt-1">Including VAT</p>
                                     </div>
                                 </div>
